@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuizArt: Quiz de Arte</title>
+<meta name="description" content="Responda perguntas sobre grandes obras de arte e monte cada uma, peça por peça. Em breve na Google Play.">
+<meta property="og:title" content="QuizArt: Quiz de Arte">
+<meta property="og:description" content="Responda perguntas sobre grandes obras de arte e monte cada uma, peça por peça.">
+<meta property="og:image" content="https://leoarteiro.github.io/quizart/img/destaque.webp">
+<link rel="icon" href="img/icone.png">
+<style>
+  :root {
+    --bg: #FBF6EE; --card: #FFFCF7; --ink: #28201A; --muted: #6E6256;
+    --accent: #8B4A2B; --on-accent: #FBF6EE; --line: #D8CBB8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #1C1814; --card: #28221C; --ink: #F1E9DD; --muted: #B9AC9C; --accent: #E6A07E; --on-accent: #1C1814; --line: #4E4439; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.6 Georgia, "Noto Serif", "Times New Roman", serif;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  .hero { text-align: center; }
+  .hero img.destaque { width: 100%; border-radius: 16px; border: 1px solid var(--line); display: block; height: auto; }
+  h1 { font-size: 34px; margin: 24px 0 4px; color: var(--accent); }
+  .lema { font-size: 20px; margin: 0 auto; max-width: 560px; }
+  .selo {
+    display: inline-block; margin-top: 20px; padding: 8px 18px; border-radius: 999px;
+    background: var(--accent); color: var(--on-accent); font-weight: bold; letter-spacing: .03em; font-size: 15px;
+  }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 8px 24px 24px; margin-top: 28px; }
+  h2 { font-size: 24px; margin: 20px 0 8px; }
+  ol, ul { padding-left: 22px; margin: 8px 0; }
+  li { margin: 6px 0; }
+  .capturas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 28px; }
+  .capturas img { width: 100%; border-radius: 14px; border: 1px solid var(--line); display: block; height: auto; }
+  @media (max-width: 640px) { .capturas { grid-template-columns: repeat(2, 1fr); } h1 { font-size: 28px; } }
+  .botao {
+    display: inline-block; margin-top: 8px; padding: 12px 22px; border-radius: 999px;
+    background: var(--accent); color: var(--on-accent); text-decoration: none; font-weight: bold;
+  }
+  a { color: var(--accent); }
+  footer { margin-top: 36px; color: var(--muted); font-size: 15px; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <img class="destaque" src="img/destaque.webp" width="1024" height="500"
+         alt="QuizArt: obras como a Mona Lisa e A Noite Estrelada montadas como quebra-cabeça">
+    <h1>QuizArt: Quiz de Arte</h1>
+    <p class="lema">Responda perguntas sobre grandes obras de arte e monte cada uma, peça por peça.</p>
+    <span class="selo">EM BREVE NA GOOGLE PLAY</span>
+  </div>
+
+  <div class="capturas">
+    <img src="img/captura_2_pergunta.webp" width="540" height="960" alt="Pergunta do quiz sobre uma obra">
+    <img src="img/captura_3_quebra_cabeca.webp" width="540" height="960" alt="Quebra-cabeça sendo montado">
+    <img src="img/captura_4_galeria.webp" width="540" height="960" alt="Galeria com as obras completas">
+    <img src="img/captura_6_trofeus.webp" width="540" height="960" alt="Tela de troféus das salas">
+  </div>
+
+  <section>
+    <h2>Como funciona</h2>
+    <ul>
+      <li>Responda perguntas sobre a obra: quem pintou, onde ela está, que técnica foi usada, o que aparece em cada detalhe.</li>
+      <li>Cada acerto vale uma peça. Errou? A pergunta volta mais tarde, com as alternativas em outra ordem.</li>
+      <li>Toque na peça e depois no lugar dela para montar o quadro.</li>
+      <li>Quadros completos vão para a sua galeria, onde você pode ampliá-los e ler sobre a obra.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Um museu para explorar</h2>
+    <ul>
+      <li>45 obras de 37 artistas, de Leonardo da Vinci e Michelangelo a Van Gogh, Monet, Vermeer, Rembrandt e Klimt.</li>
+      <li>Mais de 1.400 perguntas, em salas temáticas, com quebra-cabeças que crescem de 3×3 até 6×6 peças.</li>
+      <li>Cada sala completa vale um troféu. E há uma sala secreta, que só se revela para quem completar o museu inteiro.</li>
+      <li>Em português, inglês e espanhol. Grátis, com anúncios opcionais.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Quer jogar antes do lançamento?</h2>
+    <p>Estamos montando a lista de testadores. Antes de o jogo chegar à loja, o Google pede que pelo menos
+      12 pessoas testem por 14 dias. Para participar, basta ter um celular Android:</p>
+    <ol>
+      <li>Comente QUERO num post do @quizartgame ou chame no direct.</li>
+      <li>Quando o teste abrir, mandamos o link.</li>
+      <li>Entre com sua conta Google e instale pela Play Store.</li>
+      <li>Jogue por 14 dias e conte o que achou.</li>
+    </ol>
+    <a class="botao" href="https://www.instagram.com/quizartgame/">Falar com @quizartgame no Instagram</a>
+  </section>
+
+  <footer>
+    <p>As imagens das obras vêm do Wikimedia Commons e estão em domínio público.<br>
+      Contato: <a href="mailto:leoferreiraestudio@gmail.com">leoferreiraestudio@gmail.com</a> ·
+      <a href="https://leoarteiro.github.io/quizart-privacidade/">Política de privacidade</a></p>
+  </footer>
+</main>
+</body>
+</html>
