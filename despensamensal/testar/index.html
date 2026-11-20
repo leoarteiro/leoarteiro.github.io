@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste o Despensa Mensal</title>
+<meta name="description" content="Use o Despensa Mensal antes do lançamento: veja como entrar no teste fechado na Google Play.">
+<meta property="og:title" content="Teste o Despensa Mensal antes do lançamento">
+<meta property="og:description" content="Precisamos de 12 pessoas com Android para testar por 14 dias. Veja o passo a passo.">
+<meta property="og:image" content="https://leoarteiro.github.io/despensamensal/img/destaque.webp">
+<link rel="icon" href="../img/icone.png">
+<style>
+  :root {
+    --bg: #FFF8EC; --card: #FFFDF8; --ink: #2B2116; --muted: #6F6151;
+    --accent: #A4520E; --on-accent: #FFF8EC; --line: #E6D3B3; --aviso: #FCE8C2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #1D1812; --card: #29221A; --ink: #F3EADC; --muted: #BBAD99; --accent: #F2A65A; --on-accent: #1D1812; --line: #4F4436; --aviso: #3B2F1E; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+  .hero { text-align: center; }
+  .hero img.destaque { width: 100%; border-radius: 16px; border: 1px solid var(--line); display: block; height: auto; }
+  h1 { font-size: 32px; line-height: 1.25; margin: 24px 0 8px; color: var(--accent); }
+  .lema { font-size: 19px; margin: 0 auto; max-width: 560px; }
+  .aviso { background: var(--aviso); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-top: 24px; }
+  .aviso p { margin: 0; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 8px 24px 24px; margin-top: 28px; }
+  h2 { font-size: 24px; margin: 20px 0 8px; }
+  ol.passos { list-style: none; padding: 0; margin: 0; counter-reset: passo; }
+  ol.passos > li { counter-increment: passo; position: relative; padding: 16px 0 16px 52px; border-top: 1px solid var(--line); }
+  ol.passos > li:first-child { border-top: 0; }
+  ol.passos > li::before {
+    content: counter(passo); position: absolute; left: 0; top: 16px; width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent); color: var(--on-accent); font-weight: bold; text-align: center; line-height: 36px;
+  }
+  ol.passos h3 { margin: 4px 0; font-size: 19px; }
+  ol.passos p { margin: 4px 0; }
+  ul { padding-left: 22px; margin: 8px 0; }
+  li { margin: 6px 0; }
+  .botao {
+    display: inline-block; margin-top: 8px; padding: 12px 22px; border-radius: 999px;
+    background: var(--accent); color: var(--on-accent); text-decoration: none; font-weight: bold;
+  }
+  .botao.em-breve { background: transparent; color: var(--muted); border: 2px dashed var(--line); pointer-events: none; }
+  .nota { color: var(--muted); font-size: 15px; }
+  a { color: var(--accent); }
+  footer { margin-top: 36px; color: var(--muted); font-size: 15px; text-align: center; }
+  @media (max-width: 640px) { h1 { font-size: 27px; } section { padding: 8px 16px 20px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <img class="destaque" src="../img/destaque.webp" width="1024" height="500"
+         alt="Despensa Mensal: cesta com alimentos e os selos Lista do mês, Receitas e Validade">
+    <h1>Teste o Despensa Mensal antes de todo mundo</h1>
+    <p class="lema">Antes de liberar um app novo na loja, o Google pede que pelo menos 12 pessoas
+      o testem por 14 dias. Você pode ser uma delas.</p>
+  </div>
+
+  <div class="aviso">
+    <p><strong>O teste abre em poucos dias.</strong> O app está em revisão no Google. Já dá para entrar no grupo
+      (passo 1); os botões dos passos 2 e 3 ficam ativos assim que o teste for liberado.</p>
+  </div>
+
+  <section>
+    <h2>O que é o app</h2>
+    <p>O Despensa Mensal organiza a comida da casa por um mês inteiro: monta a lista de compras do mês, mostra
+      o que dá para cozinhar com o que você já tem e avisa antes de um alimento vencer.</p>
+    <ul>
+      <li>Lista de compras com o total do mês e modo mercado.</li>
+      <li>Centenas de receitas simples com alimentos do dia a dia.</li>
+      <li>Estoque com cores de validade e previsão de até quando a comida dura.</li>
+      <li>Sem cadastro, funciona sem internet e os dados ficam só no seu celular.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Como participar</h2>
+    <p class="nota">Você só precisa de um celular Android e de uma conta Google.
+      Use a <strong>mesma conta</strong> em todos os passos.</p>
+    <ol class="passos">
+      <li>
+        <h3>Entre no grupo de testadores</h3>
+        <p>Abra o grupo e toque em <em>Participar do grupo</em>. É por ele que o Google libera o acesso ao app.
+          Você não vai receber spam: o grupo só serve para isso.</p>
+        <a class="botao" href="https://groups.google.com/g/despensamensal-testadores">Entrar no grupo</a>
+      </li>
+      <li>
+        <h3>Aceite o convite do teste</h3>
+        <p>Abra o link do teste e toque em <em>Tornar-se testador</em>.</p>
+        <a class="botao em-breve" href="https://play.google.com/apps/testing/com.leoarteiro.despensa" aria-disabled="true">Em breve</a>
+      </li>
+      <li>
+        <h3>Instale pela Play Store</h3>
+        <p>Depois de aceitar, o Despensa Mensal aparece na Play Store para a sua conta. Pode levar alguns minutos.</p>
+        <a class="botao em-breve" href="https://play.google.com/store/apps/details?id=com.leoarteiro.despensa" aria-disabled="true">Em breve</a>
+      </li>
+      <li>
+        <h3>Fique com o app por 14 dias</h3>
+        <p>Não desinstale antes de 14 dias: é isso que conta para o Google. Usar de vez em quando
+          (montar uma lista, marcar uma compra, ver uma receita) ajuda muito, e qualquer comentário é bem-vindo.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Dúvidas comuns</h2>
+    <ul>
+      <li><strong>Não encontro o app na Play Store.</strong> Confira se a Play Store está na mesma conta Google
+        que entrou no grupo (toque na sua foto, no canto da tela, para trocar).</li>
+      <li><strong>Tem iPhone?</strong> Por enquanto o Despensa Mensal é só para Android.</li>
+      <li><strong>É grátis?</strong> Sim. O app exibe anúncios.</li>
+      <li><strong>Como mando sugestões ou erros?</strong> Pela própria Play Store ou por
+        <a href="mailto:leoferreiraestudio@gmail.com">e-mail</a>.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p><a href="../privacidade/">Política de privacidade</a> ·
+      <a href="../../">Outros apps</a></p>
+  </footer>
+</main>
+</body>
+</html>
