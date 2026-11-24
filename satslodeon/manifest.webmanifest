@@ -1,0 +1,11 @@
+{
+  "name": "Satslodeon",
+  "short_name": "Satslodeon",
+  "description": "Cinema e animação independentes, mantidos por quem assiste.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

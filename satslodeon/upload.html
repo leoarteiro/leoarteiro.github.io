@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121212">
+  <title>Enviar ao Blossom</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 48px; }
+    .step { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-top: 14px; }
+    .step h2 { margin: 0 0 6px; font-size: 17px; }
+    .step p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+    .servers label { display: flex; gap: 8px; align-items: center; color: var(--text); font-size: 14px; }
+    .servers input { width: auto; }
+    ul.log { list-style: none; padding: 0; margin: 10px 0 0; font-size: 13px; }
+    ul.log li { padding: 6px 0; border-top: 1px solid var(--surface-2); word-break: break-all; }
+    .ok { color: #7bd88f; } .bad { color: var(--danger); }
+    pre { background: var(--bg); padding: 12px; border-radius: 10px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+    code { word-break: break-all; }
+    a { color: var(--accent); }
+  </style>
+  <script type="module" src="js/upload.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <a href="./">← Voltar ao Satslodeon</a>
+    <h1>Enviar obra para o Blossom</h1>
+    <p style="color:var(--muted)">O arquivo é identificado pelo seu hash SHA-256: o mesmo vídeo tem o mesmo endereço em todos os servidores.
+      A assinatura é feita pela sua extensão Nostr (NIP-07, por exemplo Alby ou nos2x); sua chave nunca passa por esta página.</p>
+
+    <section class="step">
+      <h2>1. Conectar a identidade Nostr</h2>
+      <p id="who">Nenhuma extensão conectada.</p>
+      <button class="btn" id="connect" type="button">Conectar extensão</button>
+    </section>
+
+    <section class="step">
+      <h2>2. Escolher o arquivo</h2>
+      <p>Vídeo (.mp4) ou capa (.jpg/.png). O hash é calculado aqui no navegador.</p>
+      <input type="file" id="file" accept="video/mp4,video/webm,image/*">
+      <p id="hash" style="margin-top:10px"></p>
+    </section>
+
+    <section class="step">
+      <h2>3. Servidores</h2>
+      <p>Envia ao primeiro que aceitar e pede espelhamento (cópia) aos demais. Servidores podem recusar por tamanho ou exigir pagamento.</p>
+      <div class="servers" id="servers"></div>
+      <div class="actions"><button class="btn" id="send" type="button" disabled>Enviar</button></div>
+      <ul class="log" id="log"></ul>
+    </section>
+
+    <section class="step" id="result" hidden>
+      <h2>4. Trecho para o catalog.json</h2>
+      <p>Cole no campo <code>video</code> ou <code>poster</code> da obra. Mantenha o <code>fallback</code> antigo enquanto testa.</p>
+      <pre id="snippet"></pre>
+      <button class="btn ghost" id="copySnippet" type="button">Copiar</button>
+    </section>
+  </div>
+</body>
+</html>

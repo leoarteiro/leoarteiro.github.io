@@ -1,0 +1,76 @@
+{
+  "lightningAddress": "leoarteiro04@zbd.gg",
+  "goal": {
+    "label": "Financie as próximas produções e tenha seu nome nos créditos",
+    "raisedSats": 0,
+    "targetSats": 100000
+  },
+  "blossomServers": [
+    "https://blossom.primal.net",
+    "https://cdn.satellite.earth",
+    "https://nostr.download",
+    "https://blossom.band"
+  ],
+  "works": [
+    {
+      "id": "sita",
+      "title": "Sita Sings the Blues",
+      "description": "Nina Paley, 2009.",
+      "video": {
+        "sha256": null,
+        "ext": ".mp4",
+        "fallback": ["https://dn800305.us.archive.org/0/items/Sita_Sings_the_Blues/Sita_Sings_the_Blues_large.mp4"]
+      },
+      "poster": {
+        "sha256": null,
+        "ext": ".jpg",
+        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/postersitasingtheblues.jpg"]
+      }
+    },
+    {
+      "id": "bunny",
+      "title": "Big Buck Bunny",
+      "description": "Blender Foundation.",
+      "video": {
+        "sha256": null,
+        "ext": ".mp4",
+        "fallback": ["https://storage.googleapis.com/exoplayer-test-media-0/BigBuckBunny_320x180.mp4"]
+      },
+      "poster": {
+        "sha256": null,
+        "ext": ".jpg",
+        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/Big_buck_bunny_poster_big.jpg"]
+      }
+    },
+    {
+      "id": "descarga",
+      "title": "Descarga",
+      "description": "Curta.",
+      "video": {
+        "sha256": null,
+        "ext": ".mp4",
+        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/descarga.mp4"]
+      },
+      "poster": {
+        "sha256": null,
+        "ext": ".png",
+        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/descargaposter.png"]
+      }
+    },
+    {
+      "id": "um-minuto",
+      "title": "Um Minuto para o Fim do Mundo",
+      "description": "Curta.",
+      "video": {
+        "sha256": null,
+        "ext": ".mp4",
+        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/Um%20Minuto%20para%20o%20Fim%20do%20Mundo.mp4"]
+      },
+      "poster": {
+        "sha256": null,
+        "ext": ".png",
+        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/UMFMposter.png"]
+      }
+    }
+  ]
+}
