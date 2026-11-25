@@ -1,6 +1,7 @@
 import { T } from "./texts.js";
 import { resolveSources } from "./blossom.js";
 import { p2pSupported, playTorrent } from "./p2p.js";
+import { playHls } from "./hls-player.js";
 import { requestInvoice, hasWebLN, payWithWebLN } from "./lightning.js";
 
 const app = document.getElementById("app");
@@ -77,7 +78,8 @@ function renderFeed(startIndex) {
         el("h2", {}, work.title), el("p", {}, work.description),
         el("button", { className: "btn", onclick: openDonate }, T.support), src));
     video.addEventListener("allfailed", () => slide.append(el("div", { className: "err" }, T.errorVideo)));
-    const useP2P = Boolean(work.video.torrent) && p2pSupported();
+    // Long films: HLS (pieces by hash on Blossom). Short films: torrent (P2P). Otherwise a plain file.
+    const mode = work.video.hls ? "hls" : work.video.torrent && p2pSupported() ? "p2p" : "direct";
     const loadDirect = () => {
       attachSources(video, work.video, (host) => (src.textContent = T.source(host)));
       video.preload = "metadata";
@@ -85,22 +87,29 @@ function renderFeed(startIndex) {
     slide.load = () => {
       if (slide.loaded) return;
       slide.loaded = true;
-      if (!useP2P) loadDirect(); // P2P works start only when visible (see slide.show)
+      if (mode === "direct") loadDirect(); // HLS and P2P start only when visible (see slide.show)
     };
-    // P2P first; if it can't start in time, fall back to the direct Blossom/fallback URLs.
+    // HLS or P2P first; if it can't start in time, fall back to the direct Blossom/fallback URLs.
     slide.show = async () => {
-      if (!useP2P || slide.fellBack) return playWithSoundFallback(slide);
+      if (mode === "direct" || slide.fellBack) return playWithSoundFallback(slide);
+      const resumeAt = slide.resumeAt;
       try {
-        const mirrors = await resolveSources({ ...work.video, fallback: [] }, catalog.blossomServers);
-        const resumeAt = slide.resumeAt;
-        slide.p2p = await playTorrent(video, work.video, mirrors,
-          ({ peers, peerShare, downloadedMB }) => {
-            src.textContent = T.sourceP2P(peers, peerShare);
-            src.dataset.mb = downloadedMB.toFixed(1); // for tests: total downloaded so far
+        if (mode === "hls") {
+          slide.session = await playHls(video, work.video.hls, catalog.blossomServers, {
+            startAt: resumeAt,
+            onStats: ({ height, host }) => (src.textContent = T.sourceHls(height, host)),
           });
-        if (resumeAt) video.currentTime = resumeAt; // streamTo restarts the file; continue where we left
+        } else {
+          const mirrors = await resolveSources({ ...work.video, fallback: [] }, catalog.blossomServers);
+          slide.session = await playTorrent(video, work.video, mirrors,
+            ({ peers, peerShare, downloadedMB }) => {
+              src.textContent = T.sourceP2P(peers, peerShare);
+              src.dataset.mb = downloadedMB.toFixed(1); // for tests: total downloaded so far
+            });
+          if (resumeAt) video.currentTime = resumeAt; // streamTo restarts the file; continue where we left
+        }
       } catch (e) {
-        console.warn("P2P unavailable, using direct sources:", e);
+        console.warn(`${mode.toUpperCase()} unavailable, using direct sources:`, e);
         slide.fellBack = true;
         loadDirect();
       }
@@ -108,9 +117,9 @@ function renderFeed(startIndex) {
     };
     slide.hide = () => {
       video.pause();
-      if (slide.p2p) slide.resumeAt = video.currentTime;
-      slide.p2p?.stop();
-      slide.p2p = null;
+      if (slide.session) slide.resumeAt = video.currentTime;
+      slide.session?.stop();
+      slide.session = null;
     };
     slide.video = video;
     return slide;
@@ -250,7 +259,7 @@ async function fetchCatalog(url, timeoutMs) {
 // Relative fallback URLs (e.g. "posters/x.webp") must point to where the catalog came from.
 function absolutizeFallbacks(data, baseUrl) {
   for (const work of data.works) {
-    for (const blob of [work.video, work.poster]) {
+    for (const blob of [work.video, work.video?.hls, work.poster]) {
       if (blob?.fallback) blob.fallback = blob.fallback.map((u) => new URL(u, baseUrl).href);
       if (blob?.torrent) blob.torrent = new URL(blob.torrent, baseUrl).href;
     }

@@ -1,7 +1,7 @@
 // Caches only the app shell; videos and posters always come from the network.
 // Also hosts WebTorrent's worker, which serves P2P video to <video> under /webtorrent/.
 importScripts("vendor/sw-webtorrent.min.js");
-const CACHE = "satslodeon-shell-v6";
+const CACHE = "satslodeon-shell-v7";
 const SHELL = ["./", "index.html", "css/style.css", "js/app.js", "js/blossom.js", "js/lightning.js", "js/texts.js", "icon.svg", "manifest.webmanifest", "vendor/qrcode.min.js"];
 
 self.addEventListener("install", (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL))));

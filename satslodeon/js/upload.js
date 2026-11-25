@@ -43,14 +43,19 @@ $("connect").onclick = async () => {
   updateSend();
 };
 
-$("file").onchange = async (e) => {
-  items = [...e.target.files].map((file) => ({ file, hash: null }));
+const HASH_BATCH = 25; // hashes per signature: one header with ~1,600 hashes would be too big for servers
+const PARALLEL = 3; // files sent at the same time
+
+$("folder").onchange = $("file").onchange = async (e) => {
+  items = [...e.target.files].filter((f) => !f.name.startsWith(".")).map((file) => ({ file, hash: null }));
   updateSend();
   if (!items.length) return;
   const total = items.reduce((n, i) => n + i.file.size, 0);
   $("hash").textContent = `Calculando o hash de ${items.length} arquivo(s), ${(total / 1048576).toFixed(1)} MB…`;
   for (const item of items) item.hash = await sha256Hex(item.file);
-  $("hash").innerHTML = items.map((i) => `${i.file.name}: <code>${i.hash.slice(0, 16)}…</code>`).join("<br>");
+  $("hash").innerHTML = items.length > 8
+    ? `${items.length} arquivos prontos (${(total / 1048576).toFixed(1)} MB). Serão pedidas ${Math.ceil(items.length / HASH_BATCH)} assinatura(s): na nos2x, escolha “autorizar sempre” para este site.`
+    : items.map((i) => `${i.file.name}: <code>${i.hash.slice(0, 16)}…</code>`).join("<br>");
   updateSend();
 };
 
@@ -58,20 +63,27 @@ $("send").onclick = async () => {
   const servers = [...document.querySelectorAll("#servers input:checked")].map((i) => i.value);
   $("send").disabled = true;
   $("log").replaceChildren();
+  const isHls = items.some((i) => i.file.name.endsWith(".m3u8"));
 
-  // Build torrents first so one signature covers every file and every .torrent.
+  // Build torrents first (plain videos only; HLS pieces don't need one) so the signatures cover them.
   for (const item of items) {
-    item.torrentFile = item.file.type.startsWith("video/") ? await buildTorrent(item, servers) : null;
+    item.torrentFile = !isHls && item.file.type.startsWith("video/") ? await buildTorrent(item, servers) : null;
     item.torrentHash = item.torrentFile && (await sha256Hex(item.torrentFile));
   }
 
-  let auth;
-  const signLine = log("Aguardando a assinatura na extensão Nostr (confira a janela da extensão)…");
+  // One signature per batch of files; with "always allow" in the extension these are silent.
+  const batches = [];
+  for (let i = 0; i < items.length; i += HASH_BATCH) batches.push(items.slice(i, i + HASH_BATCH));
+  const signLine = log(`Aguardando ${batches.length} assinatura(s) na extensão Nostr (confira a janela da extensão)…`);
   try {
-    const hashes = items.flatMap((i) => [i.hash, i.torrentHash]).filter(Boolean);
-    const names = items.map((i) => i.file.name).join(", ");
-    auth = await authHeader("upload", hashes, `Satslodeon: enviar ${names}`.slice(0, 300));
-    signLine.textContent = "Assinado.";
+    for (const [n, batch] of batches.entries()) {
+      const hashes = batch.flatMap((i) => [i.hash, i.torrentHash]).filter(Boolean);
+      const names = batch.map((i) => i.file.name).join(", ");
+      const auth = await authHeader("upload", hashes, `Satslodeon: enviar ${names}`.slice(0, 300));
+      batch.forEach((i) => (i.auth = auth));
+      signLine.textContent = `Assinando… ${n + 1}/${batches.length}`;
+    }
+    signLine.textContent = batches.length > 1 ? `Assinado (${batches.length} lotes).` : "Assinado.";
     signLine.className = "ok";
   } catch (e) {
     signLine.className = "bad";
@@ -82,18 +94,29 @@ $("send").onclick = async () => {
     return;
   }
 
+  const progress = log(`Enviando 0/${items.length}…`);
+  let done = 0, failed = 0;
+  const queue = [...items];
+  await Promise.all(Array.from({ length: PARALLEL }, async () => {
+    while (queue.length) {
+      const item = queue.shift();
+      item.ok = await sendToServers(item, servers, item.auth);
+      if (!item.ok.length) failed++;
+      progress.textContent = `Enviando ${++done}/${items.length}…${failed ? ` (${failed} sem nenhum servidor)` : ""}`;
+    }
+  }));
+  progress.textContent = `Envio concluído: ${done - failed}/${items.length} arquivos em pelo menos um servidor.`;
+  progress.className = failed ? "bad" : "ok";
+
   const entries = [];
-  for (const item of items) {
-    const ok = await sendToServers(item, servers, auth);
-    if (!ok.length) continue;
+  for (const item of items.filter((i) => i.ok.length)) {
     const entry = { sha256: item.hash, ext: extOf(item.file.name), fallback: [] };
-    if (item.torrentFile) entry.torrent = await storeTorrent(item.torrentFile, ok[0], auth);
+    if (item.torrentFile) entry.torrent = await storeTorrent(item.torrentFile, item.ok[0], item.auth);
     entries.push({ item, entry });
   }
-
   if (entries.length) {
     $("result").hidden = false;
-    $("snippet").textContent = entries.map(({ item, entry }) => {
+    $("snippet").textContent = isHls ? await hlsSnippet(failed) : entries.map(({ item, entry }) => {
       const known = findInCatalog(item.hash);
       const head = known ? `// ${item.file.name}: já está no catálogo (${known}); nada a colar.` : `// ${item.file.name}`;
       return `${head}\n${JSON.stringify(entry, null, 2)}`;
@@ -102,13 +125,29 @@ $("send").onclick = async () => {
   updateSend();
 };
 
+// For an HLS folder the catalog only needs the master playlist: the one that lists other playlists.
+async function hlsSnippet(failed) {
+  for (const item of items.filter((i) => i.file.name.endsWith(".m3u8"))) {
+    if ((await item.file.text()).includes(".m3u8")) {
+      const warn = failed ? `// ATENÇÃO: ${failed} arquivo(s) não entraram em nenhum servidor; o filme vai travar nesses pontos.\n` : "";
+      return `${warn}// Filme em HLS: cole no campo "video" da obra (mantenha o "fallback" atual)\n` +
+        JSON.stringify({ hls: { sha256: item.hash, ext: ".m3u8", fallback: [] } }, null, 2);
+    }
+  }
+  return "// Não encontrei a lista principal (master) do HLS nesta pasta.";
+}
+
 // Uploads one file to the first server that accepts it and asks the others to mirror it.
+// One log line per file, updated as each server answers.
 async function sendToServers(item, servers, auth) {
   const { file, hash } = item;
   const ok = [];
+  const marks = [];
+  const line = log(`${file.name}: …`);
+  const show = () => (line.textContent = `${file.name}: ${marks.join(" · ")}`);
   let sourceUrl = null;
   for (const server of servers) {
-    const line = log(`${file.name} → ${server}: verificando…`);
+    const host = new URL(server).host;
     try {
       if (sourceUrl) {
         // Mirror is cheaper: the server fetches from a mirror we already have.
@@ -116,18 +155,18 @@ async function sendToServers(item, servers, auth) {
       } else {
         const check = await checkUpload(server, file, hash).catch(() => ({ ok: true }));
         if (!check.ok) throw new Error(check.reason || `recusado (HTTP ${check.status})`);
-        const blob = await upload(server, file, auth, (p) => (line.textContent = `${file.name} → ${server}: enviando ${Math.round(p * 100)}%`));
+        const blob = await upload(server, file, auth);
         if (blob.sha256 && blob.sha256 !== hash) throw new Error("hash devolvido não confere");
         sourceUrl = blob.url;
       }
-      line.textContent = `${file.name} → ${server}: ok`;
-      line.className = "ok";
+      marks.push(`${host} ✓`);
       ok.push(server);
     } catch (e) {
-      line.textContent = `${file.name} → ${server}: ${e.message}`;
-      line.className = "bad";
+      marks.push(`${host} ✗ (${e.message})`);
     }
+    show();
   }
+  line.className = ok.length ? "ok" : "bad";
   return ok;
 }
 

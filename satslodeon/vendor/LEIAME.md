@@ -5,3 +5,5 @@
   Copiados para o projeto para não depender de CDN (inclusive dentro do APK).
 - `qrcode.min.js`: QRCode.js 1.0.0 (davidshimjs), licença MIT, https://github.com/davidshimjs/qrcodejs
   (cópia do arquivo publicado no cdnjs). Gera o QR da invoice Lightning no diálogo de doação.
+- `hls.light.min.mjs`: hls.js 1.7.4 (versão "light"), licença Apache-2.0, https://github.com/video-dev/hls.js
+  (arquivo `dist/hls.light.min.mjs` do pacote npm). Toca os filmes longos em HLS.
