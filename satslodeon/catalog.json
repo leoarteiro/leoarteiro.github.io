@@ -19,12 +19,16 @@
       "video": {
         "sha256": null,
         "ext": ".mp4",
-        "fallback": ["https://dn800305.us.archive.org/0/items/Sita_Sings_the_Blues/Sita_Sings_the_Blues_large.mp4"]
+        "fallback": [
+          "https://dn800305.us.archive.org/0/items/Sita_Sings_the_Blues/Sita_Sings_the_Blues_large.mp4"
+        ]
       },
       "poster": {
-        "sha256": null,
-        "ext": ".jpg",
-        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/postersitasingtheblues.jpg"]
+        "sha256": "27775db812453b0e83cae5485953e2d528d728abf4fbd2a63c782fa8551daad6",
+        "ext": ".webp",
+        "fallback": [
+          "posters/sita.webp"
+        ]
       }
     },
     {
@@ -34,12 +38,16 @@
       "video": {
         "sha256": null,
         "ext": ".mp4",
-        "fallback": ["https://storage.googleapis.com/exoplayer-test-media-0/BigBuckBunny_320x180.mp4"]
+        "fallback": [
+          "https://storage.googleapis.com/exoplayer-test-media-0/BigBuckBunny_320x180.mp4"
+        ]
       },
       "poster": {
-        "sha256": null,
-        "ext": ".jpg",
-        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/Big_buck_bunny_poster_big.jpg"]
+        "sha256": "ddf3c37e2c7418d2c00f9543e8bad1b823a8e267ddb737e1a209766fc26beb6d",
+        "ext": ".webp",
+        "fallback": [
+          "posters/bunny.webp"
+        ]
       }
     },
     {
@@ -49,12 +57,16 @@
       "video": {
         "sha256": null,
         "ext": ".mp4",
-        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/descarga.mp4"]
+        "fallback": [
+          "https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/descarga.mp4"
+        ]
       },
       "poster": {
-        "sha256": null,
-        "ext": ".png",
-        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/descargaposter.png"]
+        "sha256": "85ee6d488c6f3b0779e864474c9f7c8c55921c836122e210b4d4f70c0b64c106",
+        "ext": ".webp",
+        "fallback": [
+          "posters/descarga.webp"
+        ]
       }
     },
     {
@@ -64,12 +76,16 @@
       "video": {
         "sha256": null,
         "ext": ".mp4",
-        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/Um%20Minuto%20para%20o%20Fim%20do%20Mundo.mp4"]
+        "fallback": [
+          "https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/Um%20Minuto%20para%20o%20Fim%20do%20Mundo.mp4"
+        ]
       },
       "poster": {
-        "sha256": null,
-        "ext": ".png",
-        "fallback": ["https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/UMFMposter.png"]
+        "sha256": "e17d98dee2dc607a701d7cbf3cf6828b0b42497826f207a9a1996a6253f3fc26",
+        "ext": ".webp",
+        "fallback": [
+          "posters/um-minuto.webp"
+        ]
       }
     }
   ]
