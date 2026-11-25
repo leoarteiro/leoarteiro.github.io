@@ -74,11 +74,10 @@
       "title": "Um Minuto para o Fim do Mundo",
       "description": "Curta.",
       "video": {
-        "sha256": null,
+        "sha256": "6a521448939f897dd9b6891c7024979766de9b5a64f2b8a5eba1c36c5bf973c5",
         "ext": ".mp4",
-        "fallback": [
-          "https://jcyabbzpkjqgojybtumy.supabase.co/storage/v1/object/public/episodes/Um%20Minuto%20para%20o%20Fim%20do%20Mundo.mp4"
-        ]
+        "fallback": [],
+        "torrent": "https://blossom.primal.net/a1551e29bc85665307612bf8d9367649b6e1e1b6f133cfb6962f906dc2ea5d67"
       },
       "poster": {
         "sha256": "e17d98dee2dc607a701d7cbf3cf6828b0b42497826f207a9a1996a6253f3fc26",

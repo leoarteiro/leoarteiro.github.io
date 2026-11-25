@@ -59,10 +59,18 @@ export async function authHeader(action, sha256s, description) {
   return "Nostr " + toBase64Utf8(JSON.stringify(event));
 }
 
+// A server that never answers must not freeze the upload page (seen with cdn.satellite.earth).
+function timeoutSignal(ms) {
+  const ctrl = new AbortController();
+  setTimeout(() => ctrl.abort(new Error("o servidor não respondeu a tempo")), ms);
+  return ctrl.signal;
+}
+
 // BUD-06: asks the server whether it would accept the blob before sending it.
 export async function checkUpload(server, file, sha256) {
   const res = await fetch(`${trim(server)}/upload`, {
     method: "HEAD",
+    signal: timeoutSignal(15000),
     headers: {
       "X-SHA-256": sha256,
       "X-Content-Length": String(file.size),
@@ -84,6 +92,9 @@ export function upload(server, file, auth, onProgress) {
       else reject(new Error(xhr.getResponseHeader("X-Reason") || `HTTP ${xhr.status}`));
     };
     xhr.onerror = () => reject(new Error("network error"));
+    // At least 2 min, or ~50 KB/s for big files, before giving up on a silent server.
+    xhr.timeout = Math.max(120000, (file.size / 50000) * 1000);
+    xhr.ontimeout = () => reject(new Error("o servidor não respondeu a tempo"));
     xhr.send(file);
   });
 }
@@ -92,6 +103,7 @@ export function upload(server, file, auth, onProgress) {
 export async function mirror(server, url, auth) {
   const res = await fetch(`${trim(server)}/mirror`, {
     method: "PUT",
+    signal: timeoutSignal(90000),
     headers: { Authorization: auth, "Content-Type": "application/json" },
     body: JSON.stringify({ url }),
   });
