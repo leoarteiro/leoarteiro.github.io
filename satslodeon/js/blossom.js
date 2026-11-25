@@ -42,15 +42,17 @@ function toBase64Utf8(text) {
 }
 
 // Signs a kind 24242 authorization event with the NIP-07 browser extension.
-export async function authHeader(action, sha256, description) {
+// One signature can cover several blobs: Blossom accepts multiple "x" tags (one per sha256).
+export async function authHeader(action, sha256s, description) {
   if (!window.nostr) throw new Error("NIP-07 extension not found");
+  const hashes = Array.isArray(sha256s) ? sha256s : [sha256s];
   const event = await window.nostr.signEvent({
     kind: 24242,
     created_at: Math.floor(Date.now() / 1000),
     content: description,
     tags: [
       ["t", action],
-      ["x", sha256],
+      ...hashes.map((h) => ["x", h]),
       ["expiration", String(Math.floor(Date.now() / 1000) + 600)],
     ],
   });

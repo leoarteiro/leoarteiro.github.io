@@ -63,69 +63,89 @@ $("send").onclick = async () => {
   const ok = [];
   let sourceUrl = null;
 
+  // Build the torrent first so a single signature covers both the video and its .torrent.
+  const torrentFile = file.type.startsWith("video/") ? await buildTorrent(servers) : null;
+  const torrentHash = torrentFile && (await sha256Hex(torrentFile));
+
+  let auth;
+  const signLine = log("Aguardando a assinatura na extensão Nostr (confira a janela da Alby/nos2x)…");
   try {
-    const auth = await authHeader("upload", hash, `Satslodeon: ${file.name}`);
-    for (const server of servers) {
-      const line = log(`${server}: verificando…`);
-      try {
-        if (sourceUrl) {
-          // Mirror is cheaper: the server fetches from a mirror we already have.
-          await mirror(server, sourceUrl, auth).catch(() => upload(server, file, auth));
-        } else {
-          const check = await checkUpload(server, file, hash).catch(() => ({ ok: true }));
-          if (!check.ok) throw new Error(check.reason || `recusado (HTTP ${check.status})`);
-          const blob = await upload(server, file, auth, (p) => (line.textContent = `${server}: enviando ${Math.round(p * 100)}%`));
-          if (blob.sha256 && blob.sha256 !== hash) throw new Error("hash devolvido não confere");
-          sourceUrl = blob.url;
-        }
-        line.textContent = `${server}: ok`;
-        line.className = "ok";
-        ok.push(server);
-      } catch (e) {
-        line.textContent = `${server}: ${e.message}`;
-        line.className = "bad";
-      }
-    }
+    auth = await authHeader("upload", [hash, torrentHash].filter(Boolean), `Satslodeon: enviar ${file.name}`);
+    signLine.textContent = "Assinado.";
+    signLine.className = "ok";
   } catch (e) {
-    log(`Assinatura recusada: ${e.message}`, "bad");
+    signLine.className = "bad";
+    signLine.textContent = /cancel|reject|denied/i.test(e.message)
+      ? "A janela de assinatura foi fechada ou recusada. Recarregue a página (F5), conecte de novo, envie e aprove a assinatura na extensão."
+      : `Assinatura falhou: ${e.message}`;
+    updateSend();
+    return;
+  }
+
+  for (const server of servers) {
+    const line = log(`${server}: verificando…`);
+    try {
+      if (sourceUrl) {
+        // Mirror is cheaper: the server fetches from a mirror we already have.
+        await mirror(server, sourceUrl, auth).catch(() => upload(server, file, auth));
+      } else {
+        const check = await checkUpload(server, file, hash).catch(() => ({ ok: true }));
+        if (!check.ok) throw new Error(check.reason || `recusado (HTTP ${check.status})`);
+        const blob = await upload(server, file, auth, (p) => (line.textContent = `${server}: enviando ${Math.round(p * 100)}%`));
+        if (blob.sha256 && blob.sha256 !== hash) throw new Error("hash devolvido não confere");
+        sourceUrl = blob.url;
+      }
+      line.textContent = `${server}: ok`;
+      line.className = "ok";
+      ok.push(server);
+    } catch (e) {
+      line.textContent = `${server}: ${e.message}`;
+      line.className = "bad";
+    }
   }
 
   if (ok.length) {
     const entry = { sha256: hash, ext: extOf(file.name), fallback: [] };
-    if (file.type.startsWith("video/")) entry.torrent = await makeTorrent(ok);
+    if (torrentFile) entry.torrent = await storeTorrent(torrentFile, ok[0], auth);
     $("result").hidden = false;
     $("snippet").textContent = JSON.stringify(entry, null, 2);
   }
   updateSend();
 };
 
-$("copySnippet").onclick = () => navigator.clipboard.writeText($("snippet").textContent);
-
-// Creates the work's torrent (web seeds = Blossom mirrors that accepted the video) and stores
-// the .torrent on Blossom too. Falls back to a download if that upload fails.
-async function makeTorrent(servers) {
+// Creates the work's torrent; every selected Blossom server is a web seed (servers that end up
+// refusing the video simply don't answer, the others keep the film available).
+async function buildTorrent(servers) {
   const line = log("Gerando o torrent (P2P)…");
   try {
     const webSeeds = servers.map((s) => `${s.replace(/\/+$/, "")}/${hash}${extOf(file.name)}`);
     const { bytes } = await createTorrentFile(file, webSeeds);
-    const torrentFile = new File([bytes], `${hash}.torrent`, { type: "application/x-bittorrent" });
-    const torrentHash = await sha256Hex(torrentFile);
-    try {
-      const auth = await authHeader("upload", torrentHash, `Satslodeon: torrent de ${file.name}`);
-      const blob = await upload(servers[0], torrentFile, auth);
-      line.textContent = `Torrent gerado e enviado: ${blob.url}`;
-      line.className = "ok";
-      return blob.url;
-    } catch (e) {
-      const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(torrentFile), download: torrentFile.name });
-      a.click();
-      line.textContent = `Torrent gerado (baixado como ${torrentFile.name}; o envio falhou: ${e.message}). Coloque-o em web/torrents/.`;
-      line.className = "bad";
-      return `torrents/${torrentFile.name}`;
-    }
+    line.textContent = "Torrent gerado.";
+    line.className = "ok";
+    return new File([bytes], `${hash}.torrent`, { type: "application/x-bittorrent" });
   } catch (e) {
     line.textContent = `Não foi possível gerar o torrent: ${e.message}`;
     line.className = "bad";
-    return undefined;
+    return null;
   }
 }
+
+// Stores the .torrent on Blossom with the same signature; falls back to a download.
+async function storeTorrent(torrentFile, server, auth) {
+  const line = log("Enviando o torrent…");
+  try {
+    const blob = await upload(server, torrentFile, auth);
+    line.textContent = `Torrent enviado: ${blob.url}`;
+    line.className = "ok";
+    return blob.url;
+  } catch (e) {
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(torrentFile), download: torrentFile.name });
+    a.click();
+    line.textContent = `O envio do torrent falhou (${e.message}); ele foi baixado como ${torrentFile.name}. Mande o arquivo para colocá-lo em web/torrents/.`;
+    line.className = "bad";
+    return `torrents/${torrentFile.name}`;
+  }
+}
+
+$("copySnippet").onclick = () => navigator.clipboard.writeText($("snippet").textContent);
+
