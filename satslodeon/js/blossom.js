@@ -60,11 +60,12 @@ export async function authHeader(action, sha256s, description) {
 }
 
 // Browsers don't know HLS extensions and send them as "application/octet-stream", which Blossom
-// servers refuse. fMP4 segments are MP4 data, so they go as video/mp4.
-const TYPES_BY_EXT = { ".m4s": "video/mp4", ".m3u8": "application/vnd.apple.mpegurl", ".mp4": "video/mp4", ".webp": "image/webp" };
+// servers refuse.
+// ".ts" must win over the browser's guess, which on some systems is TypeScript source.
+const TYPES_BY_EXT = { ".ts": "video/mp2t", ".m4s": "video/mp4", ".m3u8": "application/vnd.apple.mpegurl" };
 export function contentTypeOf(file) {
   const ext = (file.name.match(/\.[a-z0-9]+$/i)?.[0] ?? "").toLowerCase();
-  return file.type || TYPES_BY_EXT[ext] || "application/octet-stream";
+  return TYPES_BY_EXT[ext] || file.type || "application/octet-stream";
 }
 
 // A server that never answers must not freeze the upload page (seen with cdn.satellite.earth).
