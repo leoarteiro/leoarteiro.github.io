@@ -39,7 +39,7 @@
     <section class="step">
       <h2>2. Escolher os arquivos</h2>
       <p>Vídeos (.mp4) e/ou capas (.jpg/.png/.webp); pode escolher vários de uma vez (uma assinatura só). O hash é calculado aqui no navegador.</p>
-      <input type="file" id="file" accept="video/mp4,video/webm,image/*" multiple>
+      <input type="file" id="file" accept="video/mp4,video/webm,image/*,.ts,.m3u8,.m4s,video/mp2t" multiple>
       <p style="margin:10px 0 4px">Filme em HLS (gerado por <code>tools/hls-pack.py</code>): escolha a pasta <code>blobs</code> inteira.</p>
       <input type="file" id="folder" webkitdirectory>
       <p id="hash" style="margin-top:10px"></p>
