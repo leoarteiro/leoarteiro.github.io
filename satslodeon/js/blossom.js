@@ -59,6 +59,14 @@ export async function authHeader(action, sha256s, description) {
   return "Nostr " + toBase64Utf8(JSON.stringify(event));
 }
 
+// Browsers don't know HLS extensions and send them as "application/octet-stream", which Blossom
+// servers refuse. fMP4 segments are MP4 data, so they go as video/mp4.
+const TYPES_BY_EXT = { ".m4s": "video/mp4", ".m3u8": "application/vnd.apple.mpegurl", ".mp4": "video/mp4", ".webp": "image/webp" };
+export function contentTypeOf(file) {
+  const ext = (file.name.match(/\.[a-z0-9]+$/i)?.[0] ?? "").toLowerCase();
+  return file.type || TYPES_BY_EXT[ext] || "application/octet-stream";
+}
+
 // A server that never answers must not freeze the upload page (seen with cdn.satellite.earth).
 function timeoutSignal(ms) {
   const ctrl = new AbortController();
@@ -74,7 +82,7 @@ export async function checkUpload(server, file, sha256) {
     headers: {
       "X-SHA-256": sha256,
       "X-Content-Length": String(file.size),
-      "X-Content-Type": file.type || "application/octet-stream",
+      "X-Content-Type": contentTypeOf(file),
     },
   });
   return { ok: res.ok, status: res.status, reason: res.headers.get("X-Reason") };
@@ -85,7 +93,7 @@ export function upload(server, file, auth, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", `${trim(server)}/upload`);
     xhr.setRequestHeader("Authorization", auth);
-    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.setRequestHeader("Content-Type", contentTypeOf(file));
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(e.loaded / e.total);
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
