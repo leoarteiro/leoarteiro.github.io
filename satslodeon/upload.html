@@ -37,9 +37,9 @@
     </section>
 
     <section class="step">
-      <h2>2. Escolher o arquivo</h2>
-      <p>Vídeo (.mp4) ou capa (.jpg/.png). O hash é calculado aqui no navegador.</p>
-      <input type="file" id="file" accept="video/mp4,video/webm,image/*">
+      <h2>2. Escolher os arquivos</h2>
+      <p>Vídeos (.mp4) e/ou capas (.jpg/.png/.webp); pode escolher vários de uma vez (uma assinatura só). O hash é calculado aqui no navegador.</p>
+      <input type="file" id="file" accept="video/mp4,video/webm,image/*" multiple>
       <p id="hash" style="margin-top:10px"></p>
     </section>
 
@@ -53,7 +53,7 @@
 
     <section class="step" id="result" hidden>
       <h2>4. Trecho para o catalog.json</h2>
-      <p>Cole no campo <code>video</code> ou <code>poster</code> da obra. Mantenha o <code>fallback</code> antigo enquanto testa.</p>
+      <p>Para cada arquivo novo, cole no campo <code>video</code> ou <code>poster</code> da obra. Arquivos que já estão no catálogo (mesmo hash) não precisam de edição.</p>
       <pre id="snippet"></pre>
       <button class="btn ghost" id="copySnippet" type="button">Copiar</button>
     </section>

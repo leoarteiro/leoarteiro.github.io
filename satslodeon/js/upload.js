@@ -2,8 +2,7 @@ import { sha256Hex, authHeader, checkUpload, upload, mirror } from "./blossom.js
 import { createTorrentFile } from "./p2p.js";
 
 const $ = (id) => document.getElementById(id);
-let file = null;
-let hash = null;
+let items = []; // [{ file, hash }] — several files can go with a single signature
 
 const catalog = await (await fetch("catalog.json", { cache: "no-cache" })).json().catch(() => ({ blossomServers: [] }));
 $("servers").append(...catalog.blossomServers.map((s) => {
@@ -20,7 +19,7 @@ function log(text, cls = "") {
 }
 
 const extOf = (name) => (name.match(/\.[a-z0-9]+$/i)?.[0] ?? "").toLowerCase();
-const updateSend = () => ($("send").disabled = !(file && hash && window.nostr));
+const updateSend = () => ($("send").disabled = !(items.length && items.every((i) => i.hash) && window.nostr));
 
 // Extensions inject window.nostr a moment after the page loads; wait a little for it.
 async function waitForNostr(ms = 3000) {
@@ -45,14 +44,13 @@ $("connect").onclick = async () => {
 };
 
 $("file").onchange = async (e) => {
-  file = e.target.files[0] ?? null;
-  hash = null;
+  items = [...e.target.files].map((file) => ({ file, hash: null }));
   updateSend();
-  if (!file) return;
-  const mb = (file.size / 1048576).toFixed(1);
-  $("hash").textContent = `Calculando hash de ${mb} MB…`;
-  hash = await sha256Hex(file);
-  $("hash").innerHTML = `SHA-256: <code>${hash}</code>`;
+  if (!items.length) return;
+  const total = items.reduce((n, i) => n + i.file.size, 0);
+  $("hash").textContent = `Calculando o hash de ${items.length} arquivo(s), ${(total / 1048576).toFixed(1)} MB…`;
+  for (const item of items) item.hash = await sha256Hex(item.file);
+  $("hash").innerHTML = items.map((i) => `${i.file.name}: <code>${i.hash.slice(0, 16)}…</code>`).join("<br>");
   updateSend();
 };
 
@@ -60,17 +58,19 @@ $("send").onclick = async () => {
   const servers = [...document.querySelectorAll("#servers input:checked")].map((i) => i.value);
   $("send").disabled = true;
   $("log").replaceChildren();
-  const ok = [];
-  let sourceUrl = null;
 
-  // Build the torrent first so a single signature covers both the video and its .torrent.
-  const torrentFile = file.type.startsWith("video/") ? await buildTorrent(servers) : null;
-  const torrentHash = torrentFile && (await sha256Hex(torrentFile));
+  // Build torrents first so one signature covers every file and every .torrent.
+  for (const item of items) {
+    item.torrentFile = item.file.type.startsWith("video/") ? await buildTorrent(item, servers) : null;
+    item.torrentHash = item.torrentFile && (await sha256Hex(item.torrentFile));
+  }
 
   let auth;
-  const signLine = log("Aguardando a assinatura na extensão Nostr (confira a janela da Alby/nos2x)…");
+  const signLine = log("Aguardando a assinatura na extensão Nostr (confira a janela da extensão)…");
   try {
-    auth = await authHeader("upload", [hash, torrentHash].filter(Boolean), `Satslodeon: enviar ${file.name}`);
+    const hashes = items.flatMap((i) => [i.hash, i.torrentHash]).filter(Boolean);
+    const names = items.map((i) => i.file.name).join(", ");
+    auth = await authHeader("upload", hashes, `Satslodeon: enviar ${names}`.slice(0, 300));
     signLine.textContent = "Assinado.";
     signLine.className = "ok";
   } catch (e) {
@@ -82,8 +82,33 @@ $("send").onclick = async () => {
     return;
   }
 
+  const entries = [];
+  for (const item of items) {
+    const ok = await sendToServers(item, servers, auth);
+    if (!ok.length) continue;
+    const entry = { sha256: item.hash, ext: extOf(item.file.name), fallback: [] };
+    if (item.torrentFile) entry.torrent = await storeTorrent(item.torrentFile, ok[0], auth);
+    entries.push({ item, entry });
+  }
+
+  if (entries.length) {
+    $("result").hidden = false;
+    $("snippet").textContent = entries.map(({ item, entry }) => {
+      const known = findInCatalog(item.hash);
+      const head = known ? `// ${item.file.name}: já está no catálogo (${known}); nada a colar.` : `// ${item.file.name}`;
+      return `${head}\n${JSON.stringify(entry, null, 2)}`;
+    }).join("\n\n");
+  }
+  updateSend();
+};
+
+// Uploads one file to the first server that accepts it and asks the others to mirror it.
+async function sendToServers(item, servers, auth) {
+  const { file, hash } = item;
+  const ok = [];
+  let sourceUrl = null;
   for (const server of servers) {
-    const line = log(`${server}: verificando…`);
+    const line = log(`${file.name} → ${server}: verificando…`);
     try {
       if (sourceUrl) {
         // Mirror is cheaper: the server fetches from a mirror we already have.
@@ -91,40 +116,42 @@ $("send").onclick = async () => {
       } else {
         const check = await checkUpload(server, file, hash).catch(() => ({ ok: true }));
         if (!check.ok) throw new Error(check.reason || `recusado (HTTP ${check.status})`);
-        const blob = await upload(server, file, auth, (p) => (line.textContent = `${server}: enviando ${Math.round(p * 100)}%`));
+        const blob = await upload(server, file, auth, (p) => (line.textContent = `${file.name} → ${server}: enviando ${Math.round(p * 100)}%`));
         if (blob.sha256 && blob.sha256 !== hash) throw new Error("hash devolvido não confere");
         sourceUrl = blob.url;
       }
-      line.textContent = `${server}: ok`;
+      line.textContent = `${file.name} → ${server}: ok`;
       line.className = "ok";
       ok.push(server);
     } catch (e) {
-      line.textContent = `${server}: ${e.message}`;
+      line.textContent = `${file.name} → ${server}: ${e.message}`;
       line.className = "bad";
     }
   }
+  return ok;
+}
 
-  if (ok.length) {
-    const entry = { sha256: hash, ext: extOf(file.name), fallback: [] };
-    if (torrentFile) entry.torrent = await storeTorrent(torrentFile, ok[0], auth);
-    $("result").hidden = false;
-    $("snippet").textContent = JSON.stringify(entry, null, 2);
+// Name of the work that already uses this hash (so the catalog needs no edit), if any.
+function findInCatalog(hash) {
+  for (const work of catalog.works ?? []) {
+    if (work.video?.sha256 === hash) return `vídeo de "${work.title}"`;
+    if (work.poster?.sha256 === hash) return `capa de "${work.title}"`;
   }
-  updateSend();
-};
+  return null;
+}
 
-// Creates the work's torrent; every selected Blossom server is a web seed (servers that end up
+// Creates a video's torrent; every selected Blossom server is a web seed (servers that end up
 // refusing the video simply don't answer, the others keep the film available).
-async function buildTorrent(servers) {
-  const line = log("Gerando o torrent (P2P)…");
+async function buildTorrent(item, servers) {
+  const line = log(`${item.file.name}: gerando o torrent (P2P)…`);
   try {
-    const webSeeds = servers.map((s) => `${s.replace(/\/+$/, "")}/${hash}${extOf(file.name)}`);
-    const { bytes } = await createTorrentFile(file, webSeeds);
-    line.textContent = "Torrent gerado.";
+    const webSeeds = servers.map((s) => `${s.replace(/\/+$/, "")}/${item.hash}${extOf(item.file.name)}`);
+    const { bytes } = await createTorrentFile(item.file, webSeeds);
+    line.textContent = `${item.file.name}: torrent gerado.`;
     line.className = "ok";
-    return new File([bytes], `${hash}.torrent`, { type: "application/x-bittorrent" });
+    return new File([bytes], `${item.hash}.torrent`, { type: "application/x-bittorrent" });
   } catch (e) {
-    line.textContent = `Não foi possível gerar o torrent: ${e.message}`;
+    line.textContent = `${item.file.name}: não foi possível gerar o torrent: ${e.message}`;
     line.className = "bad";
     return null;
   }
