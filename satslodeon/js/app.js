@@ -99,8 +99,12 @@ function renderFeed(startIndex) {
       playWithSoundFallback(target);
     }
   }, { root: feed, threshold: 0.6 });
-  slides.forEach((s) => observer.observe(s));
-  slides[startIndex]?.scrollIntoView({ behavior: "instant" });
+  // Jump to the chosen work only after layout, then start observing; otherwise the first
+  // slide is seen as visible and starts playing (happened in the Android WebView).
+  requestAnimationFrame(() => {
+    feed.scrollTop = slides[startIndex]?.offsetTop ?? 0;
+    slides.forEach((s) => observer.observe(s));
+  });
   document.title = `${catalog.works[startIndex]?.title ?? ""} · ${T.appName}`;
 }
 

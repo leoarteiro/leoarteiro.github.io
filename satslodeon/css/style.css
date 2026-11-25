@@ -20,7 +20,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .btn:disabled { opacity: .6; cursor: progress; }
 
 /* Home */
-.home { min-height: 100%; padding: 16px 0 150px; max-width: 960px; margin: 0 auto; }
+.home { min-height: 100%; padding: calc(16px + env(safe-area-inset-top)) 0 150px; max-width: 960px; margin: 0 auto; }
 .header { padding: 8px 16px 0; }
 .header h1 { margin: 0; font-size: 28px; letter-spacing: -.5px; }
 .header h1 span { color: var(--accent); }
@@ -57,14 +57,14 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .feed { position: fixed; inset: 0; overflow-y: auto; scroll-snap-type: y mandatory; background: #000; }
 .slide { position: relative; height: 100dvh; scroll-snap-align: start; display: grid; place-items: center; }
 .slide video { width: 100%; height: 100%; object-fit: contain; background: #000; }
-.slide .overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 16px calc(70px + env(safe-area-inset-bottom));
-  background: linear-gradient(transparent, rgba(0,0,0,.8)); pointer-events: none; }
+.slide .overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 16px calc(110px + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, rgba(0,0,0,.8)); pointer-events: none; z-index: 1; }
 .slide .overlay > * { pointer-events: auto; }
 .slide h2 { margin: 0; font-size: 20px; }
 .slide p { margin: 4px 0 12px; color: #ddd; font-size: 14px; }
 .slide .src { font-size: 11px; color: #aaa; }
 .slide .err { position: absolute; color: var(--danger); }
-.slide .unmute { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,.7); color: #fff; padding: 12px 18px; }
+.slide .unmute { position: absolute; z-index: 1; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,.7); color: #fff; padding: 12px 18px; }
 .back { position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 12px; z-index: 2;
   background: rgba(0,0,0,.6); color: #fff; padding: 10px 16px; }
 
