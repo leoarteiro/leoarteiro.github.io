@@ -112,7 +112,7 @@ export function upload(server, file, auth, onProgress) {
 export async function mirror(server, url, auth) {
   const res = await fetch(`${trim(server)}/mirror`, {
     method: "PUT",
-    signal: timeoutSignal(90000),
+    signal: timeoutSignal(30000),
     headers: { Authorization: auth, "Content-Type": "application/json" },
     body: JSON.stringify({ url }),
   });

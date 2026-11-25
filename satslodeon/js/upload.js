@@ -63,6 +63,7 @@ $("send").onclick = async () => {
   const servers = [...document.querySelectorAll("#servers input:checked")].map((i) => i.value);
   $("send").disabled = true;
   $("log").replaceChildren();
+  strikes.clear();
   // HLS pieces (.ts/.m4s) and playlists never get a torrent, even when re-sent on their own.
   const isHls = items.some((i) => /\.(m3u8|ts|m4s)$/.test(i.file.name));
 
@@ -138,6 +139,11 @@ async function hlsSnippet(failed) {
   return "// Não encontrei a lista principal (master) do HLS nesta pasta.";
 }
 
+// A server that fails twice in a row is skipped for the rest of the batch, so one silent server
+// (cdn.satellite.earth hung on every signed request) doesn't stall dozens of files.
+const MAX_STRIKES = 2;
+const strikes = new Map();
+
 // Uploads one file to the first server that accepts it and asks the others to mirror it.
 // One log line per file, updated as each server answers.
 async function sendToServers(item, servers, auth) {
@@ -149,6 +155,11 @@ async function sendToServers(item, servers, auth) {
   let sourceUrl = null;
   for (const server of servers) {
     const host = new URL(server).host;
+    if ((strikes.get(server) ?? 0) >= MAX_STRIKES) {
+      marks.push(`${host} — pulado (falhou várias vezes)`);
+      show();
+      continue;
+    }
     try {
       if (sourceUrl) {
         // Mirror is cheaper: the server fetches from a mirror we already have.
@@ -162,8 +173,10 @@ async function sendToServers(item, servers, auth) {
       }
       marks.push(`${host} ✓`);
       ok.push(server);
+      strikes.set(server, 0);
     } catch (e) {
       marks.push(`${host} ✗ (${e.message})`);
+      strikes.set(server, (strikes.get(server) ?? 0) + 1);
     }
     show();
   }
