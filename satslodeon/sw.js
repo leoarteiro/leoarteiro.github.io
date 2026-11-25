@@ -1,5 +1,5 @@
 // Caches only the app shell; videos and posters always come from the network.
-const CACHE = "satslodeon-shell-v2";
+const CACHE = "satslodeon-shell-v3";
 const SHELL = ["./", "index.html", "css/style.css", "js/app.js", "js/blossom.js", "js/lightning.js", "js/texts.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL))));

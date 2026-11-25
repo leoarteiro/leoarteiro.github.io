@@ -194,11 +194,53 @@ function route() {
   else renderHome();
 }
 
+// The app ships a copy of the catalog, but prefers the published one so that new works
+// and Blossom hashes reach phones without a new APK.
+const REMOTE_CATALOG_URL = "https://leoarteiro.github.io/satslodeon/catalog.json";
+const REMOTE_TIMEOUT_MS = 5000;
+
+async function fetchCatalog(url, timeoutMs) {
+  const ctrl = new AbortController();
+  const timer = timeoutMs && setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { cache: "no-cache", signal: ctrl.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data.works)) throw new Error("invalid catalog");
+    return data;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Relative fallback URLs (e.g. "posters/x.webp") must point to where the catalog came from.
+function absolutizeFallbacks(data, baseUrl) {
+  for (const work of data.works) {
+    for (const blob of [work.video, work.poster]) {
+      if (blob?.fallback) blob.fallback = blob.fallback.map((u) => new URL(u, baseUrl).href);
+    }
+  }
+  return data;
+}
+
+async function loadCatalog(isNativeApp) {
+  if (isNativeApp) {
+    try {
+      return absolutizeFallbacks(await fetchCatalog(REMOTE_CATALOG_URL, REMOTE_TIMEOUT_MS), REMOTE_CATALOG_URL);
+    } catch (e) {
+      console.warn("Remote catalog unavailable, using the bundled one:", e);
+    }
+  }
+  return fetchCatalog("catalog.json");
+}
+
 async function start() {
-  catalog = await (await fetch("catalog.json", { cache: "no-cache" })).json();
+  const isNativeApp = window.Capacitor?.isNativePlatform?.() ?? false;
+  catalog = await loadCatalog(isNativeApp);
   window.addEventListener("hashchange", route);
   route();
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  // Inside the Capacitor app the files are already local; the service worker is only for the website.
+  if ("serviceWorker" in navigator && !isNativeApp) navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 
 start();
