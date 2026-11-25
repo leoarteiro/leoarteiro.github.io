@@ -178,7 +178,7 @@ function showInvoice(invoice) {
       try { await payWithWebLN(invoice); status.className = "success"; status.textContent = T.paid; }
       catch (e) { status.className = "error"; status.textContent = e.message; }
     } }, T.payWebLN),
-    el("a", { className: "btn ghost", href: link, style: "text-align:center;text-decoration:none" }, T.openWallet),
+    el("a", { className: "btn ghost", href: link }, T.openWallet),
     el("button", { className: "btn ghost", type: "button", onclick: async () => {
       await navigator.clipboard.writeText(invoice); toast(T.copied);
     } }, T.copy),
