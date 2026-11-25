@@ -5,7 +5,7 @@ const $ = (id) => document.getElementById(id);
 let file = null;
 let hash = null;
 
-const catalog = await (await fetch("catalog.json", { cache: "no-cache" })).json();
+const catalog = await (await fetch("catalog.json", { cache: "no-cache" })).json().catch(() => ({ blossomServers: [] }));
 $("servers").append(...catalog.blossomServers.map((s) => {
   const label = document.createElement("label");
   const box = Object.assign(document.createElement("input"), { type: "checkbox", checked: true, value: s });
@@ -22,10 +22,25 @@ function log(text, cls = "") {
 const extOf = (name) => (name.match(/\.[a-z0-9]+$/i)?.[0] ?? "").toLowerCase();
 const updateSend = () => ($("send").disabled = !(file && hash && window.nostr));
 
+// Extensions inject window.nostr a moment after the page loads; wait a little for it.
+async function waitForNostr(ms = 3000) {
+  for (let t = 0; !window.nostr && t < ms; t += 200) await new Promise((r) => setTimeout(r, 200));
+  return window.nostr;
+}
+
 $("connect").onclick = async () => {
-  if (!window.nostr) { $("who").textContent = "Extensão NIP-07 não encontrada. Instale Alby ou nos2x e recarregue."; return; }
-  const pubkey = await window.nostr.getPublicKey();
-  $("who").textContent = `Conectado: ${pubkey.slice(0, 12)}…${pubkey.slice(-6)}`;
+  $("who").textContent = "Conectando…";
+  if (!(await waitForNostr())) {
+    $("who").textContent = "Extensão Nostr não encontrada nesta página. Confira se a Alby (ou nos2x) está instalada e ativa, e recarregue a página (F5).";
+    return;
+  }
+  try {
+    const pubkey = await window.nostr.getPublicKey();
+    if (!pubkey) throw new Error("a extensão não devolveu a chave pública");
+    $("who").textContent = `Conectado: ${pubkey.slice(0, 12)}…${pubkey.slice(-6)}`;
+  } catch (e) {
+    $("who").textContent = `A extensão recusou ou falhou: ${e?.message || e}. Na Alby, confira se há uma chave Nostr configurada (Configurações → Nostr) e se você permitiu este site.`;
+  }
   updateSend();
 };
 
