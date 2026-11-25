@@ -4,7 +4,7 @@
 import { resolveSources } from "./blossom.js";
 
 const HASH_NAME = /([0-9a-f]{64})(\.[a-z0-9]+)$/;
-const FETCH_TIMEOUT_MS = 15000;
+const FETCH_TIMEOUT_MS = 6000;
 const START_TIMEOUT_MS = 20000;
 
 async function sha256OfBuffer(buf) {
@@ -12,26 +12,67 @@ async function sha256OfBuffer(buf) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Extends hls.js's own loader (which keeps the bandwidth stats that drive quality switching):
+// Wraps hls.js's own loader (which keeps the bandwidth stats that drive quality switching):
 // blobs named by hash are requested from each mirror in turn and rejected if their hash differs.
+// hls.js loaders can be used only once, so every attempt gets a fresh one.
 function makeLoader(BaseLoader, bases, onServed) {
   let preferred = 0; // index of the mirror that answered last
 
-  return class BlossomLoader extends BaseLoader {
+  return class BlossomLoader {
+    constructor(hlsConfig) {
+      this.hlsConfig = hlsConfig;
+      this.inner = null;
+      this.stats = {
+        aborted: false, loaded: 0, retry: 0, total: 0, chunkCount: 0, bwEstimate: 0,
+        loading: { start: 0, first: 0, end: 0 }, parsing: { start: 0, end: 0 }, buffering: { start: 0, first: 0, end: 0 },
+      };
+      this.context = null;
+      this.aborted = false;
+    }
+
+    destroy() { this.inner?.destroy(); }
+
+    getCacheAge() { return this.inner?.getCacheAge?.() ?? null; }
+
+    getResponseHeader(name) { return this.inner?.getResponseHeader?.(name) ?? null; }
+
+    abort() {
+      this.aborted = true;
+      this.inner?.abort();
+    }
+
+    // hls.js keeps a reference to this.stats from the start, so the same object is reset in place
+    // and handed to each new loader (which writes the timings used for quality switching).
+    fresh() {
+      this.inner?.destroy();
+      this.inner = new BaseLoader(this.hlsConfig);
+      Object.assign(this.stats, { aborted: false, loaded: 0, retry: 0, total: 0, chunkCount: 0, bwEstimate: 0 });
+      Object.assign(this.stats.loading, { start: 0, first: 0, end: 0 });
+      Object.assign(this.stats.parsing, { start: 0, end: 0 });
+      Object.assign(this.stats.buffering, { start: 0, first: 0, end: 0 });
+      this.inner.stats = this.stats;
+      return this.inner;
+    }
+
     load(context, config, callbacks) {
+      this.context = context;
       const match = HASH_NAME.exec(new URL(context.url).pathname);
-      if (!match) return super.load(context, config, callbacks);
+      if (!match) return this.fresh().load(context, config, callbacks);
       const order = bases.map((_, i) => bases[(preferred + i) % bases.length]);
+      // hls.js reads its timeouts from loadPolicy; a mirror that never answers (seen with
+      // cdn.satellite.earth) must time out so the next one is tried.
+      const loadPolicy = { ...config.loadPolicy, maxTimeToFirstByteMs: FETCH_TIMEOUT_MS, maxLoadTimeMs: 4 * FETCH_TIMEOUT_MS };
       let attempt = 0;
 
       const tryNext = (reason) => {
+        if (this.aborted) return;
         if (reason) console.warn(`HLS: ${context.url} failed (${reason}), trying next mirror`);
         if (attempt >= order.length) {
           return callbacks.onError({ code: 404, text: "not available on any mirror" }, context, null, this.stats);
         }
         const base = order[attempt++];
         context.url = base + match[1] + match[2];
-        super.load(context, { ...config, timeout: FETCH_TIMEOUT_MS, maxRetry: 0 }, {
+        this.fresh().load(context, { ...config, loadPolicy, timeout: FETCH_TIMEOUT_MS, maxRetry: 0 }, {
           ...callbacks,
           onSuccess: async (response, stats, ctx, details) => {
             const data = response.data;
@@ -69,6 +110,16 @@ export async function playHls(video, hlsBlob, servers, { startAt = 0, onStats } 
     maxBufferLength: 30, // same 30 s of buffer that worked in the WebTorrent tests
     maxMaxBufferLength: 60,
     capLevelToPlayerSize: true, // no 720p on a small phone screen
+    // Our loader already tries every mirror; if a piece is missing everywhere, give up fast so hls.js
+    // plays that stretch from another quality instead of stalling (seen with a 720p piece missing).
+    fragLoadPolicy: {
+      default: {
+        maxTimeToFirstByteMs: 10000,
+        maxLoadTimeMs: 60000,
+        timeoutRetry: { maxNumRetry: 1, retryDelayMs: 0, maxRetryDelayMs: 0 },
+        errorRetry: { maxNumRetry: 1, retryDelayMs: 300, maxRetryDelayMs: 1000 },
+      },
+    },
   });
   const report = () => {
     const level = hls.levels?.[hls.currentLevel];

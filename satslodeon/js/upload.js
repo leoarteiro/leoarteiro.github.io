@@ -63,7 +63,8 @@ $("send").onclick = async () => {
   const servers = [...document.querySelectorAll("#servers input:checked")].map((i) => i.value);
   $("send").disabled = true;
   $("log").replaceChildren();
-  const isHls = items.some((i) => i.file.name.endsWith(".m3u8"));
+  // HLS pieces (.ts/.m4s) and playlists never get a torrent, even when re-sent on their own.
+  const isHls = items.some((i) => /\.(m3u8|ts|m4s)$/.test(i.file.name));
 
   // Build torrents first (plain videos only; HLS pieces don't need one) so the signatures cover them.
   for (const item of items) {
