@@ -1,5 +1,6 @@
 import { T } from "./texts.js";
 import { resolveSources } from "./blossom.js";
+import { p2pSupported, playTorrent } from "./p2p.js";
 import { requestInvoice, hasWebLN, payWithWebLN } from "./lightning.js";
 
 const app = document.getElementById("app");
@@ -76,11 +77,40 @@ function renderFeed(startIndex) {
         el("h2", {}, work.title), el("p", {}, work.description),
         el("button", { className: "btn", onclick: openDonate }, T.support), src));
     video.addEventListener("allfailed", () => slide.append(el("div", { className: "err" }, T.errorVideo)));
+    const useP2P = Boolean(work.video.torrent) && p2pSupported();
+    const loadDirect = () => {
+      attachSources(video, work.video, (host) => (src.textContent = T.source(host)));
+      video.preload = "metadata";
+    };
     slide.load = () => {
       if (slide.loaded) return;
       slide.loaded = true;
-      attachSources(video, work.video, (host) => (src.textContent = T.source(host)));
-      video.preload = "metadata";
+      if (!useP2P) loadDirect(); // P2P works start only when visible (see slide.show)
+    };
+    // P2P first; if it can't start in time, fall back to the direct Blossom/fallback URLs.
+    slide.show = async () => {
+      if (!useP2P || slide.fellBack) return playWithSoundFallback(slide);
+      try {
+        const mirrors = await resolveSources({ ...work.video, fallback: [] }, catalog.blossomServers);
+        const resumeAt = slide.resumeAt;
+        slide.p2p = await playTorrent(video, work.video, mirrors,
+          ({ peers, peerShare, downloadedMB }) => {
+            src.textContent = T.sourceP2P(peers, peerShare);
+            src.dataset.mb = downloadedMB.toFixed(1); // for tests: total downloaded so far
+          });
+        if (resumeAt) video.currentTime = resumeAt; // streamTo restarts the file; continue where we left
+      } catch (e) {
+        console.warn("P2P unavailable, using direct sources:", e);
+        slide.fellBack = true;
+        loadDirect();
+      }
+      playWithSoundFallback(slide);
+    };
+    slide.hide = () => {
+      video.pause();
+      if (slide.p2p) slide.resumeAt = video.currentTime;
+      slide.p2p?.stop();
+      slide.p2p = null;
     };
     slide.video = video;
     return slide;
@@ -92,11 +122,11 @@ function renderFeed(startIndex) {
 
   const observer = new IntersectionObserver((entries) => {
     for (const { target, isIntersecting } of entries) {
-      if (!isIntersecting) { target.video.pause(); continue; }
+      if (!isIntersecting) { target.hide(); continue; }
       target.load();
       const i = slides.indexOf(target);
       slides[i + 1]?.load(); // prefetch next work's metadata
-      playWithSoundFallback(target);
+      target.show();
     }
   }, { root: feed, threshold: 0.6 });
   // Jump to the chosen work only after layout, then start observing; otherwise the first
@@ -222,12 +252,21 @@ function absolutizeFallbacks(data, baseUrl) {
   for (const work of data.works) {
     for (const blob of [work.video, work.poster]) {
       if (blob?.fallback) blob.fallback = blob.fallback.map((u) => new URL(u, baseUrl).href);
+      if (blob?.torrent) blob.torrent = new URL(blob.torrent, baseUrl).href;
     }
   }
   return data;
 }
 
 async function loadCatalog(isNativeApp) {
+  // During development a test catalog can be chosen with ?catalogo=dev/<file>.json (localhost only;
+  // the Capacitor app also runs on https://localhost).
+  const testCatalog = new URLSearchParams(location.search).get("catalogo");
+  const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
+  if (isLocal && testCatalog) {
+    const url = new URL(testCatalog, location.href).href;
+    return absolutizeFallbacks(await fetchCatalog(url), url);
+  }
   if (isNativeApp) {
     try {
       return absolutizeFallbacks(await fetchCatalog(REMOTE_CATALOG_URL, REMOTE_TIMEOUT_MS), REMOTE_CATALOG_URL);
@@ -235,7 +274,8 @@ async function loadCatalog(isNativeApp) {
       console.warn("Remote catalog unavailable, using the bundled one:", e);
     }
   }
-  return fetchCatalog("catalog.json");
+  const localUrl = new URL("catalog.json", location.href).href;
+  return absolutizeFallbacks(await fetchCatalog(localUrl), localUrl);
 }
 
 async function start() {

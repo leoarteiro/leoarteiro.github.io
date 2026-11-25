@@ -28,5 +28,6 @@ export const T = {
   errorVideo: "Não foi possível carregar este vídeo.",
   tapForSound: "🔇 Toque para ativar o som",
   source: (host) => `fonte: ${host}`,
+  sourceP2P: (peers, share) => `fonte: P2P · ${peers} conexões · ${share}% de outros espectadores`,
   uploadLink: "Enviar obra para o Blossom",
 };

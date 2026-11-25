@@ -1,4 +1,5 @@
 import { sha256Hex, authHeader, checkUpload, upload, mirror } from "./blossom.js";
+import { createTorrentFile } from "./p2p.js";
 
 const $ = (id) => document.getElementById(id);
 let file = null;
@@ -75,10 +76,41 @@ $("send").onclick = async () => {
   }
 
   if (ok.length) {
+    const entry = { sha256: hash, ext: extOf(file.name), fallback: [] };
+    if (file.type.startsWith("video/")) entry.torrent = await makeTorrent(ok);
     $("result").hidden = false;
-    $("snippet").textContent = JSON.stringify({ sha256: hash, ext: extOf(file.name), fallback: [] }, null, 2);
+    $("snippet").textContent = JSON.stringify(entry, null, 2);
   }
   updateSend();
 };
 
 $("copySnippet").onclick = () => navigator.clipboard.writeText($("snippet").textContent);
+
+// Creates the work's torrent (web seeds = Blossom mirrors that accepted the video) and stores
+// the .torrent on Blossom too. Falls back to a download if that upload fails.
+async function makeTorrent(servers) {
+  const line = log("Gerando o torrent (P2P)…");
+  try {
+    const webSeeds = servers.map((s) => `${s.replace(/\/+$/, "")}/${hash}${extOf(file.name)}`);
+    const { bytes } = await createTorrentFile(file, webSeeds);
+    const torrentFile = new File([bytes], `${hash}.torrent`, { type: "application/x-bittorrent" });
+    const torrentHash = await sha256Hex(torrentFile);
+    try {
+      const auth = await authHeader("upload", torrentHash, `Satslodeon: torrent de ${file.name}`);
+      const blob = await upload(servers[0], torrentFile, auth);
+      line.textContent = `Torrent gerado e enviado: ${blob.url}`;
+      line.className = "ok";
+      return blob.url;
+    } catch (e) {
+      const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(torrentFile), download: torrentFile.name });
+      a.click();
+      line.textContent = `Torrent gerado (baixado como ${torrentFile.name}; o envio falhou: ${e.message}). Coloque-o em web/torrents/.`;
+      line.className = "bad";
+      return `torrents/${torrentFile.name}`;
+    }
+  } catch (e) {
+    line.textContent = `Não foi possível gerar o torrent: ${e.message}`;
+    line.className = "bad";
+    return undefined;
+  }
+}
