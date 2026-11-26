@@ -16,7 +16,10 @@ async function sha256OfBuffer(buf) {
 // blobs named by hash are requested from each mirror in turn and rejected if their hash differs.
 // hls.js loaders can be used only once, so every attempt gets a fresh one.
 function makeLoader(BaseLoader, bases, onServed) {
-  let preferred = 0; // index of the mirror that answered last
+  // Mirrors are tried best-first by their track record (hits minus misses), so one that has only part
+  // of the film (e.g. nostr.download while it fills up) doesn't become the first try after a single hit.
+  const score = new Map(bases.map((b) => [b, 0]));
+  const ranked = () => [...bases].sort((a, b) => score.get(b) - score.get(a));
 
   return class BlossomLoader {
     constructor(hlsConfig) {
@@ -58,7 +61,7 @@ function makeLoader(BaseLoader, bases, onServed) {
       this.context = context;
       const match = HASH_NAME.exec(new URL(context.url).pathname);
       if (!match) return this.fresh().load(context, config, callbacks);
-      const order = bases.map((_, i) => bases[(preferred + i) % bases.length]);
+      const order = ranked();
       // hls.js reads its timeouts from loadPolicy; a mirror that never answers (seen with
       // cdn.satellite.earth) must time out so the next one is tried.
       const loadPolicy = { ...config.loadPolicy, maxTimeToFirstByteMs: FETCH_TIMEOUT_MS, maxLoadTimeMs: 4 * FETCH_TIMEOUT_MS };
@@ -66,7 +69,11 @@ function makeLoader(BaseLoader, bases, onServed) {
 
       const tryNext = (reason) => {
         if (this.aborted) return;
-        if (reason) console.warn(`HLS: ${context.url} failed (${reason}), trying next mirror`);
+        if (reason) {
+          console.warn(`HLS: ${context.url} failed (${reason}), trying next mirror`);
+          const failed = order[attempt - 1];
+          score.set(failed, score.get(failed) - 1);
+        }
         if (attempt >= order.length) {
           return callbacks.onError({ code: 404, text: "not available on any mirror" }, context, null, this.stats);
         }
@@ -78,7 +85,7 @@ function makeLoader(BaseLoader, bases, onServed) {
             const data = response.data;
             const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
             if ((await sha256OfBuffer(bytes)) !== match[1]) return tryNext("hash mismatch");
-            preferred = bases.indexOf(base);
+            score.set(base, score.get(base) + 1);
             onServed?.(new URL(context.url).host);
             callbacks.onSuccess(response, stats, ctx, details);
           },
