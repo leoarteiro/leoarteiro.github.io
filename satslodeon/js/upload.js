@@ -1,4 +1,4 @@
-import { sha256Hex, authHeader, checkUpload, upload, mirror } from "./blossom.js";
+import { sha256Hex, authHeader, checkUpload, upload, mirror, hasBlob } from "./blossom.js";
 import { createTorrentFile } from "./p2p.js";
 
 const $ = (id) => document.getElementById(id);
@@ -161,6 +161,14 @@ async function sendToServers(item, servers, auth) {
       continue;
     }
     try {
+      // Already there (e.g. a repeated upload of a big film): nothing to send.
+      if (await hasBlob(server, hash, extOf(file.name))) {
+        marks.push(`${host} ✓ (já estava)`);
+        ok.push(server);
+        sourceUrl ??= `${server.replace(/\/+$/, "")}/${hash}${extOf(file.name)}`;
+        show();
+        continue;
+      }
       if (sourceUrl) {
         // Mirror is cheaper: the server fetches from a mirror we already have.
         await mirror(server, sourceUrl, auth).catch(() => upload(server, file, auth));

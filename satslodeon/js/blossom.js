@@ -75,6 +75,16 @@ function timeoutSignal(ms) {
   return ctrl.signal;
 }
 
+// True if the server already serves this blob (so a repeated upload can skip it).
+export async function hasBlob(server, sha256, ext = "") {
+  try {
+    const res = await fetch(`${trim(server)}/${sha256}${ext}`, { method: "HEAD", signal: timeoutSignal(8000) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 // BUD-06: asks the server whether it would accept the blob before sending it.
 export async function checkUpload(server, file, sha256) {
   const res = await fetch(`${trim(server)}/upload`, {
