@@ -20,7 +20,12 @@
         "ext": ".mp4",
         "fallback": [
           "https://dn800305.us.archive.org/0/items/Sita_Sings_the_Blues/Sita_Sings_the_Blues_large.mp4"
-        ]
+        ],
+        "hls": {
+          "sha256": "a200f64f42cbc737525e26ab07b1485d337541987889def3833b29e24434f4dd",
+          "ext": ".m3u8",
+          "fallback": []
+        }
       },
       "poster": {
         "sha256": "27775db812453b0e83cae5485953e2d528d728abf4fbd2a63c782fa8551daad6",
