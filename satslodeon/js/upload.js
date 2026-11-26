@@ -107,7 +107,14 @@ $("send").onclick = async () => {
       progress.textContent = `Enviando ${++done}/${items.length}…${failed ? ` (${failed} sem nenhum servidor)` : ""}`;
     }
   }));
-  progress.textContent = `Envio concluído: ${done - failed}/${items.length} arquivos em pelo menos um servidor.`;
+  // Before warning, look again for the missing ones (a busy server may have refused only the check).
+  for (const item of items.filter((i) => !i.ok.length)) {
+    for (const server of servers) {
+      if (await hasBlob(server, item.hash, extOf(item.file.name))) item.ok.push(server);
+    }
+  }
+  failed = items.filter((i) => !i.ok.length).length;
+  progress.textContent = `Envio concluído: ${items.length - failed}/${items.length} arquivos em pelo menos um servidor.`;
   progress.className = failed ? "bad" : "ok";
 
   const entries = [];
@@ -139,10 +146,25 @@ async function hlsSnippet(failed) {
   return "// Não encontrei a lista principal (master) do HLS nesta pasta.";
 }
 
-// A server that fails twice in a row is skipped for the rest of the batch, so one silent server
-// (cdn.satellite.earth hung on every signed request) doesn't stall dozens of files.
+// A server that fails twice in a row gets no uploads for a minute (servers rate-limit big batches;
+// cdn.satellite.earth used to hang on every signed request). Blobs it already has still count.
 const MAX_STRIKES = 2;
-const strikes = new Map();
+const COOLDOWN_MS = 60000;
+const strikes = new Map(); // server -> { count, until }
+
+const coolingDown = (server) => {
+  const st = strikes.get(server);
+  if (!st || st.count < MAX_STRIKES) return false;
+  if (Date.now() < st.until) return true;
+  strikes.delete(server); // cooldown over: try again
+  return false;
+};
+const strike = (server) => {
+  const st = strikes.get(server) ?? { count: 0, until: 0 };
+  st.count++;
+  if (st.count >= MAX_STRIKES) st.until = Date.now() + COOLDOWN_MS;
+  strikes.set(server, st);
+};
 
 // Uploads one file to the first server that accepts it and asks the others to mirror it.
 // One log line per file, updated as each server answers.
@@ -155,17 +177,17 @@ async function sendToServers(item, servers, auth) {
   let sourceUrl = null;
   for (const server of servers) {
     const host = new URL(server).host;
-    if ((strikes.get(server) ?? 0) >= MAX_STRIKES) {
-      marks.push(`${host} — pulado (falhou várias vezes)`);
-      show();
-      continue;
-    }
     try {
       // Already there (e.g. a repeated upload of a big film): nothing to send.
       if (await hasBlob(server, hash, extOf(file.name))) {
         marks.push(`${host} ✓ (já estava)`);
         ok.push(server);
         sourceUrl ??= `${server.replace(/\/+$/, "")}/${hash}${extOf(file.name)}`;
+        show();
+        continue;
+      }
+      if (coolingDown(server)) {
+        marks.push(`${host} — pausa (falhou várias vezes; tenta de novo em instantes)`);
         show();
         continue;
       }
@@ -181,10 +203,10 @@ async function sendToServers(item, servers, auth) {
       }
       marks.push(`${host} ✓`);
       ok.push(server);
-      strikes.set(server, 0);
+      strikes.delete(server);
     } catch (e) {
       marks.push(`${host} ✗ (${e.message})`);
-      strikes.set(server, (strikes.get(server) ?? 0) + 1);
+      strike(server);
     }
     show();
   }
