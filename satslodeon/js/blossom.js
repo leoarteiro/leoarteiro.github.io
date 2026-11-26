@@ -85,12 +85,14 @@ export async function hasBlob(server, sha256, ext = "") {
   }
 }
 
-// BUD-06: asks the server whether it would accept the blob before sending it.
-export async function checkUpload(server, file, sha256) {
+// BUD-06: asks the server whether it would accept the blob before sending it. Some servers
+// (nostr.download) require the signed authorization even for this check.
+export async function checkUpload(server, file, sha256, auth) {
   const res = await fetch(`${trim(server)}/upload`, {
     method: "HEAD",
     signal: timeoutSignal(15000),
     headers: {
+      ...(auth ? { Authorization: auth } : {}),
       "X-SHA-256": sha256,
       "X-Content-Length": String(file.size),
       "X-Content-Type": contentTypeOf(file),

@@ -195,7 +195,7 @@ async function sendToServers(item, servers, auth) {
         // Mirror is cheaper: the server fetches from a mirror we already have.
         await mirror(server, sourceUrl, auth).catch(() => upload(server, file, auth));
       } else {
-        const check = await checkUpload(server, file, hash).catch(() => ({ ok: true }));
+        const check = await checkUpload(server, file, hash, auth).catch(() => ({ ok: true }));
         if (!check.ok) throw new Error(check.reason || `recusado (HTTP ${check.status})`);
         const blob = await upload(server, file, auth);
         if (blob.sha256 && blob.sha256 !== hash) throw new Error("hash devolvido não confere");
