@@ -136,7 +136,9 @@ $("send").onclick = async () => {
 
 // For an HLS folder the catalog only needs the master playlist: the one that lists other playlists.
 async function hlsSnippet(failed) {
-  for (const item of items.filter((i) => i.file.name.endsWith(".m3u8"))) {
+  // Newest first: after tools/hls-repack-segment.py the folder may still hold the previous master.
+  const playlists = items.filter((i) => i.file.name.endsWith(".m3u8")).sort((a, b) => b.file.lastModified - a.file.lastModified);
+  for (const item of playlists) {
     if ((await item.file.text()).includes(".m3u8")) {
       const warn = failed ? `// ATENÇÃO: ${failed} arquivo(s) não entraram em nenhum servidor; o filme vai travar nesses pontos.\n` : "";
       return `${warn}// Filme em HLS: cole no campo "video" da obra (mantenha o "fallback" atual)\n` +
