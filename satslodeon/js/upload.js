@@ -5,12 +5,22 @@ const $ = (id) => document.getElementById(id);
 let items = []; // [{ file, hash }] — several files can go with a single signature
 
 const catalog = await (await fetch("catalog.json", { cache: "no-cache" })).json().catch(() => ({ blossomServers: [] }));
-$("servers").append(...catalog.blossomServers.map((s) => {
+// Public Blossom servers still being evaluated (not in the catalog yet): offered unchecked, so a test
+// upload can mirror a film to them. Researched in 27/11/2026 (see docs/servidores-blossom.md).
+const CANDIDATE_SERVERS = [
+  "https://cdn.hzrd149.com", "https://blossom.f7z.io", "https://nostr.media",
+  "https://blossom.yakihonne.com", "https://cdn.nostrcheck.me", "https://blossom.oxtr.dev",
+];
+const serverBox = (url, checked, note = "") => {
   const label = document.createElement("label");
-  const box = Object.assign(document.createElement("input"), { type: "checkbox", checked: true, value: s });
-  label.append(box, s);
+  const box = Object.assign(document.createElement("input"), { type: "checkbox", checked, value: url });
+  label.append(box, url + note);
   return label;
-}));
+};
+$("servers").append(
+  ...catalog.blossomServers.map((s) => serverBox(s, true)),
+  ...CANDIDATE_SERVERS.filter((s) => !catalog.blossomServers.includes(s)).map((s) => serverBox(s, false, " (em teste)")),
+);
 
 function log(text, cls = "") {
   const li = Object.assign(document.createElement("li"), { textContent: text, className: cls });
