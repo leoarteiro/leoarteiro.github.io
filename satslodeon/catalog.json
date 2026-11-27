@@ -81,7 +81,12 @@
         "sha256": "6a521448939f897dd9b6891c7024979766de9b5a64f2b8a5eba1c36c5bf973c5",
         "ext": ".mp4",
         "fallback": [],
-        "torrent": "https://blossom.primal.net/a1551e29bc85665307612bf8d9367649b6e1e1b6f133cfb6962f906dc2ea5d67"
+        "torrent": "https://blossom.primal.net/a1551e29bc85665307612bf8d9367649b6e1e1b6f133cfb6962f906dc2ea5d67",
+        "hls": {
+          "sha256": "b1a148a419e06d6dd8135bbd16ca332963b27a4eaa546980f830dbf217a82553",
+          "ext": ".m3u8",
+          "fallback": []
+        }
       },
       "poster": {
         "sha256": "e17d98dee2dc607a701d7cbf3cf6828b0b42497826f207a9a1996a6253f3fc26",
