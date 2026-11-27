@@ -238,7 +238,9 @@ function route() {
 }
 
 // The app ships a copy of the catalog, but prefers the published one so that new works
-// and Blossom hashes reach phones without a new APK.
+// and Blossom hashes reach phones without a new APK. The signed copy on Nostr comes first;
+// GitHub Pages is the backup.
+const NOSTR_TIMEOUT_MS = 4000;
 const REMOTE_CATALOG_URL = "https://leoarteiro.github.io/satslodeon/catalog.json";
 const REMOTE_TIMEOUT_MS = 5000;
 
@@ -276,6 +278,17 @@ async function loadCatalog(isNativeApp) {
     const url = new URL(testCatalog, location.href).href;
     return absolutizeFallbacks(await fetchCatalog(url), url);
   }
+  const localUrl = new URL("catalog.json", location.href).href;
+  try {
+    // Loaded on demand so that a problem with the Nostr code never stops the app from opening.
+    const { fetchNostrCatalog } = await import("./nostr-catalog.js");
+    const { catalog: data, event, relays } = await fetchNostrCatalog(NOSTR_TIMEOUT_MS);
+    console.info(`Catalog from Nostr (${new Date(event.created_at * 1000).toISOString()}, ${relays.join(", ")})`);
+    // Relative fallbacks ("posters/x.webp") point to the copies shipped with the app/site.
+    return absolutizeFallbacks(data, localUrl);
+  } catch (e) {
+    console.warn("Nostr catalog unavailable:", e);
+  }
   if (isNativeApp) {
     try {
       return absolutizeFallbacks(await fetchCatalog(REMOTE_CATALOG_URL, REMOTE_TIMEOUT_MS), REMOTE_CATALOG_URL);
@@ -283,7 +296,6 @@ async function loadCatalog(isNativeApp) {
       console.warn("Remote catalog unavailable, using the bundled one:", e);
     }
   }
-  const localUrl = new URL("catalog.json", location.href).href;
   return absolutizeFallbacks(await fetchCatalog(localUrl), localUrl);
 }
 
