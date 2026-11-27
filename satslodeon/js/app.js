@@ -97,7 +97,7 @@ function renderFeed(startIndex) {
         if (mode === "hls") {
           slide.session = await playHls(video, work.video.hls, catalog.blossomServers, {
             startAt: resumeAt,
-            onStats: ({ height, host }) => (src.textContent = T.sourceHls(height, host)),
+            onStats: ({ height, host, p2pShare }) => (src.textContent = T.sourceHls(height, host, p2pShare)),
           });
         } else {
           const mirrors = await resolveSources({ ...work.video, fallback: [] }, catalog.blossomServers);
