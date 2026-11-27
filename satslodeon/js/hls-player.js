@@ -3,6 +3,7 @@
 // verified before the player uses it.
 
 import { resolveSources } from "./blossom.js";
+import { isCellular, onCellularChange } from "./net.js";
 
 const P2P_TRACKERS = ["wss://tracker.novage.com.ua", "wss://tracker.webtorrent.dev", "wss://tracker.openwebtorrent.com"];
 
@@ -124,7 +125,7 @@ async function p2pConfig(swarmId, mirrors, onServed, onShare) {
   const attempts = new Map(); // piece -> retries so far
   const lastMirror = new Map(); // piece -> mirror used by the last HTTP request
   const share = { http: 0, p2p: 0, uploaded: 0, p2pChecked: 0, p2pRejected: 0 };
-  const cellular = navigator.connection?.type === "cellular" || navigator.connection?.saveData;
+  const cellular = await isCellular();
 
   const config = {
     core: {
@@ -170,6 +171,11 @@ async function p2pConfig(swarmId, mirrors, onServed, onShare) {
     },
     onHlsJsCreated: (hls) => {
       const engine = hls.p2pEngine;
+      // Wi-Fi drops to mobile data mid-film (or back): stop/resume sharing accordingly.
+      const stopWatching = onCellularChange((onCellular) =>
+        engine.applyDynamicConfig({ core: { isP2PUploadDisabled: onCellular } }));
+      hls.on("hlsDestroying", stopWatching);
+      share.cellular = cellular;
       engine.addEventListener("onChunkDownloaded", (bytes, source) => {
         share[source === "p2p" ? "p2p" : "http"] += bytes;
         onShare(share);

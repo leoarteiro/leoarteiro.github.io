@@ -2,6 +2,8 @@
 // worker, keeping only ~30 s buffered ahead so viewers who stop early don't download the
 // whole film. Settings come from the lab tests in docs/teste-webtorrent-2026-11.md.
 
+import { isCellular, onCellularChange } from "./net.js";
+
 const WSS_TRACKERS = ["wss://tracker.openwebtorrent.com", "wss://tracker.webtorrent.dev"];
 const AHEAD_PAUSE_S = 30;
 const AHEAD_RESUME_S = 15;
@@ -22,8 +24,10 @@ function getClient() {
     }
     const client = new WebTorrent();
     client.createServer({ controller: reg });
-    // Don't spend the viewer's mobile data plan sharing with others.
-    if (navigator.connection?.type === "cellular" || navigator.connection?.saveData) client.throttleUpload(0);
+    // Don't spend the viewer's mobile data plan sharing with others (inside the APK the
+    // WebView can't tell, so the native network plugin is asked; see net.js).
+    if (await isCellular()) client.throttleUpload(0);
+    onCellularChange((onCellular) => client.throttleUpload(onCellular ? 0 : -1));
     return client;
   })();
   clientPromise.catch(() => (clientPromise = null));
