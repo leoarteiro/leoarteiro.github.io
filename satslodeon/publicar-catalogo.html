@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#121212">
-  <title>Publicar catálogo no Nostr</title>
+  <title>Publicar no Nostr</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
   <style>
@@ -17,6 +17,11 @@
     .ok { color: #7bd88f; } .bad { color: var(--danger); }
     code { word-break: break-all; }
     a { color: var(--accent); }
+    .banner { width: 100%; aspect-ratio: 3 / 1; object-fit: cover; border-radius: 10px; background: var(--bg); }
+    .avatar { width: 84px; height: 84px; border-radius: 50%; margin: -42px 0 0 14px; border: 3px solid var(--surface); background: var(--bg); }
+    .servers label { display: flex; gap: 8px; align-items: center; color: var(--text); font-size: 14px; }
+    .servers input { width: auto; }
+    .about { white-space: pre-wrap; color: var(--text); font-size: 14px; }
   </style>
   <script src="vendor/qrcode.min.js" defer></script>
   <script type="module" src="js/publish-catalog.js"></script>
@@ -24,7 +29,7 @@
 <body>
   <div class="wrap">
     <a href="./">← Voltar ao Satslodeon</a>
-    <h1>Publicar o catálogo no Nostr</h1>
+    <h1>Publicar o catálogo, o perfil e o site no Nostr</h1>
     <p style="color:var(--muted)">Publica o <code>catalog.json</code> desta página como um evento assinado pela chave do projeto.
       O app e o site leem o catálogo dos relays e só aceitam eventos dessa chave. Cada publicação substitui a anterior.
       A assinatura é feita pela extensão Nostr (NIP-07) ou pelo Amber no celular (NIP-46); a chave nunca passa por esta página.</p>
@@ -54,6 +59,27 @@
       <p>Uma assinatura só; o mesmo evento vai para todos os relays. Com o Amber, aprove a assinatura no celular.</p>
       <div class="actions"><button class="btn" id="publish" type="button" disabled>Publicar</button></div>
       <ul class="log" id="log"></ul>
+    </section>
+
+    <section class="step">
+      <h2>4. Perfil do projeto</h2>
+      <p>Nome, descrição, imagens e Lightning Address que os apps Nostr mostram para a chave do projeto (arquivo <code>profile.json</code>).
+        O avatar e a capa precisam estar no Blossom antes (página de envio).</p>
+      <div id="profilePreview"></div>
+      <ul class="log" id="profileCompare"></ul>
+      <div class="actions"><button class="btn" id="publishProfile" type="button" disabled>Publicar perfil</button></div>
+      <ul class="log" id="profileLog"></ul>
+    </section>
+
+    <section class="step">
+      <h2>5. Site no nsite</h2>
+      <p>Escolha a pasta <code>web</code> do projeto. Os arquivos vão para o Blossom (só os que faltam) e uma lista assinada
+        pela chave do projeto diz aos gateways quais arquivos formam o site. A pasta <code>dev/</code> fica de fora.</p>
+      <input type="file" id="siteFolder" webkitdirectory>
+      <p id="siteSummary" style="margin-top:10px"></p>
+      <div class="servers" id="siteServers"></div>
+      <div class="actions"><button class="btn" id="publishSite" type="button" disabled>Enviar arquivos e publicar o site</button></div>
+      <ul class="log" id="siteLog"></ul>
     </section>
   </div>
 </body>

@@ -31,5 +31,9 @@ export const T = {
   sourceHls: (height, host, p2pShare) =>
     `fonte: HLS ${height ? height + "p" : ""} · ${host}${p2pShare ? ` · ${p2pShare}% de outros espectadores` : ""}`,
   sourceP2P: (peers, share) => `fonte: P2P · ${peers} conexões · ${share}% de outros espectadores`,
-  uploadLink: "Enviar obra para o Blossom",
+  publishWorkLink: "Quero publicar minha obra",
+  getAppTitle: "📱 App para Android",
+  getAppZapstore: "Instalar pelo Zapstore",
+  getAppZapstoreDetail: "recebe as atualizações sozinho",
+  getAppApk: (version) => `Baixar o APK (${version})`,
 };

@@ -38,6 +38,17 @@ function attachSources(media, blob, onSource) {
 
 // ---------- Home ----------
 
+// Only the website offers the Android app (the catalog says which version and where it is).
+function getAppBox() {
+  const android = catalog.android;
+  if (isNativeApp || !android) return null;
+  return el("div", { className: "get-app" },
+    el("b", {}, T.getAppTitle),
+    el("a", { className: "btn", href: android.zapstore, target: "_blank", rel: "noopener" }, T.getAppZapstore),
+    el("small", {}, T.getAppZapstoreDetail),
+    el("a", { className: "footer-link", href: android.apk, download: `satslodeon-${android.version}.apk` }, T.getAppApk(android.version)));
+}
+
 function renderHome() {
   document.title = T.appName;
   const cards = catalog.works.map((work, index) => {
@@ -59,7 +70,8 @@ function renderHome() {
     el("div", { className: "notice" }, T.testNotice, el("small", {}, T.testNoticeDetail)),
     el("h2", { className: "section-title" }, T.productions),
     el("div", { className: "carousel" }, ...cards),
-    el("a", { className: "footer-link", href: "upload.html" }, T.uploadLink),
+    getAppBox(),
+    el("a", { className: "footer-link", href: "publicar-obra.html" }, T.publishWorkLink),
     el("div", { className: "goal" }, el("div", { className: "goal-inner" },
       el("p", {}, label), bar,
       el("div", { className: "row" },
@@ -299,8 +311,9 @@ async function loadCatalog(isNativeApp) {
   return absolutizeFallbacks(await fetchCatalog(localUrl), localUrl);
 }
 
+const isNativeApp = window.Capacitor?.isNativePlatform?.() ?? false;
+
 async function start() {
-  const isNativeApp = window.Capacitor?.isNativePlatform?.() ?? false;
   catalog = await loadCatalog(isNativeApp);
   window.addEventListener("hashchange", route);
   route();

@@ -5,6 +5,12 @@
     "raisedSats": 0,
     "targetSats": 100000
   },
+  "android": {
+    "version": "0.1.1-beta",
+    "zapstore": "https://zapstore.dev/apps/com.leoarteiro.satslodeon",
+    "apk": "https://cdn.zapstore.dev/77800a0e79d8e2cdfda5b47f39a0b1fcfb82c0e161435d2d8188ee589a49c01f.apk",
+    "certificateSha256": "b2d957c8518e9e2a1155361654dcbadaadd532e50878e88a890c07ecf3a4996e"
+  },
   "blossomServers": [
     "https://blossom.primal.net",
     "https://nostr.download",

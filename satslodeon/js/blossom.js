@@ -43,10 +43,12 @@ function toBase64Utf8(text) {
 
 // Signs a kind 24242 authorization event with the NIP-07 browser extension.
 // One signature can cover several blobs: Blossom accepts multiple "x" tags (one per sha256).
-export async function authHeader(action, sha256s, description) {
-  if (!window.nostr) throw new Error("NIP-07 extension not found");
+// `sign` defaults to the NIP-07 extension; the publish page passes Amber's signer instead.
+export async function authHeader(action, sha256s, description, sign = null) {
+  if (!sign && !window.nostr) throw new Error("NIP-07 extension not found");
+  sign ??= (template) => window.nostr.signEvent(template);
   const hashes = Array.isArray(sha256s) ? sha256s : [sha256s];
-  const event = await window.nostr.signEvent({
+  const event = await sign({
     kind: 24242,
     created_at: Math.floor(Date.now() / 1000),
     content: description,
@@ -62,7 +64,12 @@ export async function authHeader(action, sha256s, description) {
 // Browsers don't know HLS extensions and send them as "application/octet-stream", which Blossom
 // servers refuse.
 // ".ts" must win over the browser's guess, which on some systems is TypeScript source.
-const TYPES_BY_EXT = { ".ts": "video/mp2t", ".m4s": "video/mp4", ".m3u8": "application/vnd.apple.mpegurl" };
+// Site files (nsite) too: gateways forward the type the Blossom server stored.
+const TYPES_BY_EXT = {
+  ".ts": "video/mp2t", ".m4s": "video/mp4", ".m3u8": "application/vnd.apple.mpegurl",
+  ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".mjs": "text/javascript",
+  ".json": "application/json", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml",
+};
 export function contentTypeOf(file) {
   const ext = (file.name.match(/\.[a-z0-9]+$/i)?.[0] ?? "").toLowerCase();
   return TYPES_BY_EXT[ext] || file.type || "application/octet-stream";
@@ -101,7 +108,7 @@ export async function checkUpload(server, file, sha256, auth) {
   return { ok: res.ok, status: res.status, reason: res.headers.get("X-Reason") };
 }
 
-export function upload(server, file, auth, onProgress) {
+export function upload(server, file, auth, onProgress, minTimeoutMs = 120000) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", `${trim(server)}/upload`);
@@ -114,7 +121,7 @@ export function upload(server, file, auth, onProgress) {
     };
     xhr.onerror = () => reject(new Error("network error"));
     // At least 2 min, or ~50 KB/s for big files, before giving up on a silent server.
-    xhr.timeout = Math.max(120000, (file.size / 50000) * 1000);
+    xhr.timeout = Math.max(minTimeoutMs, (file.size / 50000) * 1000);
     xhr.ontimeout = () => reject(new Error("o servidor não respondeu a tempo"));
     xhr.send(file);
   });

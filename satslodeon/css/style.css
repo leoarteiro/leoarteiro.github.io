@@ -43,6 +43,10 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .card .info b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card .info small { color: var(--muted); }
 .footer-link { display: block; margin: 24px 16px; color: var(--muted); font-size: 13px; }
+.get-app { margin: 20px 16px 0; padding: 14px; background: var(--surface); border-radius: var(--radius);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; font-size: 14px; }
+.get-app small { color: var(--muted); }
+.get-app .footer-link { margin: 4px 0 0; }
 
 /* Goal bar */
 .goal { position: fixed; left: 0; right: 0; bottom: 0; padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
